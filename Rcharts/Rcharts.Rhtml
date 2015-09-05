@@ -1,0 +1,24 @@
+<html>
+
+<head>
+<title>Rcharts</title>
+</head>
+
+<body>
+
+<b>Rcharts</b>
+
+<p>This file will be an introduction to Rcharts, which look really cool.</p>
+
+<!--begin.rcode fig.width=7, fig.height=6
+require(devtools)
+require(Rcpp)
+library(rCharts)
+install_github('rCharts', 'ramnathv')
+## Example 1 Facetted Scatterplot
+names(iris) = gsub("\\.", "", names(iris))
+rPlot(SepalLength ~ SepalWidth | Species, data = iris, color = 'Species', type = 'point')
+end.rcode-->
+
+</body>
+</html>

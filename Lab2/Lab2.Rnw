@@ -1,0 +1,185 @@
+\documentclass{article}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+
+\textbf{Linear Regression in R}\\[.25cm]
+
+Here will illustrate how linear regression works in R.  We will want to make sure everyone is comfortable with  multiple linear regression in general.  Remember, we use the following notation to show the relationship between \\[.25cm]
+
+\begin{eqnarray*}
+\mu_y&=\beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ldots\\
+\end{eqnarray*}
+
+Here we are using our $x_1$, $x_2$, etc. (explanatory variables) to predict a particular response variable $y$, where $\mu_y$ is the average response for a set of observed values for the explanatory variables.\\[.25cm]
+
+We will use the diamonds dataset built into the \textbf{ggplot2} package to illustrate multiple linear regression in R.  We installed the ggplot2 library during the first class.  You can see the top of the dataset we will be using by typing the following commands.\\
+
+<<chunk, tidy=TRUE>>=
+library(ggplot2)
+attach(diamonds)
+head(diamonds)
+?diamonds
+@
+
+Here, we can use the \textbf{pairs()} to look at the relationship between all variables.  The last three variables in this dataset are not of interest and I am not interested in using the $table$ column either.  Therefore, I am going to remove these columns, which can be done as shown below.\\[.25cm]
+
+<<chunk, fig=TRUE>>=
+diamonds = diamonds[c(-6, -8, -9, -10)]
+pairs(diamonds[c(1,5,6)])
+@
+
+Running the \textbf{dim()} command shows that we have more than 53 thousand rows.  Because there are so many rows, the \textbf{pairs()} command may take a little time to run.  I ran this command only between the 'non-categorical' variables. We can see that there is a relationship between carat and price.  However, we don't (visually) seem to have a relationship between the other variables (table and price, nor carat and table).  
+
+We can estimate the model, using the \textbf{lm()} function.  We should do more EDA in a real world situation: look at the summary of each variable, histograms, bar charts, etc. For the purpose of not making this too long, I won't spend time looking at all the EDA I would generally look at before fitting any sort of model.  To address the direction of this lab (linear regression), we could look at correlations between the quantitative variables.
+
+<<chunk, tidy=TRUE>>=
+attach(diamonds)
+cor(carat, table)
+cor(carat, price)
+cor(price, table)
+@
+
+The correlation coefficients quantify what we saw in the plot.  With the relationship between price and carat, we could start with a simple linear regression model. The theoretical model can be considered as:  
+
+\begin{eqnarray*}
+\mu_y&=\beta_0 + \beta_1 x_1 \\
+\end{eqnarray*}
+
+If we are interested in predicting price based on the carat size, we fit the following model:
+
+<<chunk, tidy=TRUE>>=
+linear_model = lm(price~carat)
+summary(linear_model)
+@
+
+Based on the estimates, you should be able to interpret the intercept and slope for this model.  You can see the multiple R-squared value and adjusted R-squared value at the bottom of the summary.  We can also look at individual t-tests of each coefficient to determine the significance of a particular variable.
+
+<<chunk, tidy=TRUE>>=
+anova(linear_model)[,c(-5)]
+@
+
+We can also look at the anova table to see if our overall model is useful.  We can also get the MSE from the anova table.  The information from the anova table matches the summary from the linear model.\\[.25cm]
+
+We might want to see if a quadratic model would fit better to the data. The theoretical model will be of the following form: 
+
+\begin{eqnarray*}
+\mu_y&=\beta_0 + \beta_1 x_1 + \beta_2 x_1^2 \\
+\end{eqnarray*}
+
+We can then fit our model using the following code.  
+
+<<chunk, tidy=TRUE>>=
+quad_model = lm(price~carat+ I(carat^2))
+summary(quad_model)
+@
+
+We could look at the way the linear model fits the data as compared to the quadratic model.
+
+<<chunk, fig=TRUE>>=
+plot(carat, price, xlab="Carat", ylab="Price", main="Carat vs Price")
+abline(linear_model, col="red", lwd=2)
+qmod <- function(x) -1832.58 + 6677.03*x +507.91 * x^2 
+curve(qmod, 0,4, add=TRUE, col="blue", lwd=2) 
+@
+
+
+We can see that the adjusted R-squared for the quadratic model is higher.  Both models have relatively strong R-squared values.  We might see how well the model fits when using a training-test set to test model fit.  First we would create our training and test datasets.
+
+<<chunk, tidy=TRUE>>=
+set.seed(123)
+train_ind = sample(nrow(diamonds), size = nrow(diamonds)/2)
+train = diamonds[train_ind, ]
+test = diamonds[-train_ind, ]
+@
+
+We then fit both models on the training data, we can then use each model to make predictions on the test data.  We could measure the MSE from each model on the test data and compare them to choose the 'best' model.
+
+<<chunk, tidy=TRUE>>=
+lin_train_mod = lm(price~carat, data=train)
+quad_train_mod = lm(price~carat + I(carat^2), data =train)
+@
+
+Here we save the predicted values from both of these models:
+
+<<chunk, tidy=TRUE>>=
+lin_preds = predict(lin_train_mod, data = test)
+quad_preds = predict(quad_train_mod, data = test)
+lin_mse = mean((test$price - lin_preds)^2)
+quad_mse = mean((test$price - quad_preds)^2)
+lin_mse
+quad_mse
+@
+
+
+Although, the R-squared adjusted seemed to suggest that a quadratic model was a better fit, the MSE is lower for a linear model in the above split of training vs. test data.  Using a cross-validation technique would iterate the process we just conducted with multiple splits of training and test sets to assure that our split wasn't a fluke.  We will look into these techniques more closely in future labs.  There are multiple built in methods to perform cross-validation, so that we do not have to write a loop to do it ourselves.\\[.25cm]
+
+The text talks a little about the assumptions of modeling data with linear models.  Note that these are assumptions that are necessary for drawing inferential statements - that is saying something about the population from which the diamonds in our dataset were collected.  If we are only interested in predicting well, meeting these assumptions is not necessary.  In some cases, meeting the assumptions (such as our linear model assumption) can assist in making strong predictions.\\[.25cm]
+
+Linear models tend not to be the best in terms of their ability to predict compared to many other types of models.  However, they are very common in many environments due to the ease of being able to interpret the results.  With this in mind, let's fit a multiple linear regression model to our data, judge the model fit, and interpret the coefficients.\\
+
+We can look at the structure of our data (which we really should do at the beginning of the analysis), and see what variables we have to work with in building a multiple linear regression model to predict price.
+
+<<chunk, tidy=TRUE>>=
+str(diamonds)
+@
+
+Note, the coding used for categorical variables in R is not the same as that used in JMP.  However, the number of explanatory variables added into the model for any categorical variable is still the number of levels of the categorical variable minus one.  Therefore, if we wanted to add the cut as a predictor, we would add 4 additional explanatory variables to our model.
+
+The theoretical model we would fit to include a linear term of carat and cut as a predictor of price will be of the following form:
+
+\begin{eqnarray*}
+\mu_y&=\beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_3 + \beta_4 x_4 + \beta_5 x_5\\
+\end{eqnarray*}
+
+where 
+
+\begin{itemize}
+\item[] $\mu_y$ is the average price for a given set of x-values
+\item[] $x_1$ is the carat value
+\item[] $x_2$, $x_3$, $x_4$, and $x_5$ code the cut. 
+\end{itemize}
+
+I have defined my dummy variables in the following way for $x_2$, $x_3$, $x_4$, and $x_5$.  When I tried to fit the model directly, R was trying to add higher order terms to account for the categorical variable. For ease of interpretation, I created my own dummy variables. Note, the following code will take a little time to run.
+
+<<chunk, tidy=TRUE, cache=TRUE>>=
+for (i in 1:length(cut)){
+diamonds$x_2[i] = if(cut[i] == 'Fair'){1} else {0}
+diamonds$x_3[i] = if(cut[i] == "Good"){1} else {0}
+diamonds$x_4[i] = if(cut[i] == 'Very Good'){1} else {0}
+diamonds$x_5[i] = if(cut[i] == "Premium"){1} else {0}
+}
+@
+
+Before fitting our model, I will make the column names for our 'x' variables more intuitive.  Then fitting our model we have:
+
+<<chunk, tidy=TRUE, cache=TRUE>>=
+names(diamonds) = c("carat","cut","color","clarity","depth",
+                    "price","Fair","Good","VeryGood","Premium") 
+mlr_mod = lm(price~carat+Fair+Good+VeryGood+Premium, data=diamonds)
+summary(mlr_mod)
+@
+
+We can then interpret our coefficients for the above model.  Note that JMP used 1,0,-1 coding, where most other environments use 0,1 coding.  Here I created my own 0,1 coding.  Therefore, each coefficient is comparing to the 'baseline.' The way I have coded the dummy variables each coefficient is a comparison of the category listed to the 'Ideal' category.  Therefore, we predict Fair cuts will cost 1800 dollars (approximately) less than Ideal.  The same comparison can be made with the other coefficients.\\[.25cm]
+
+We can interpret the numeric coefficient in the same way we would have interpreted it in the simple linear case. Essentially, with every .01 carat increase, we predict the price of the diamond to increase by approximately 79 dollars holding the cut constant.\\[.25cm]
+
+A few additional notes:
+
+\begin{itemize}
+\item[] We might choose to add some additional items into the model like the color, clarity, or depth.  We might also consider interactions and higher order terms in our model.  However, the reason we use linear regression (and our next topic of logistic regression) is because we have nice interpretations of our coefficients.  Adding higher order terms, takes away from our interpretability of coefficients.  
+
+\item[] With so many diamonds in our dataset, it is likely that most of our coefficients will be deemed as $statistically$ $significant$.  Therefore, you might (or you should) consider a cross-validation approach to whether or not the variable is truly useful for predicting the price well, rather than p-values or confidence intervals.
+
+\item[] To judge overall model fit, the text (and 6530) discuss many different approaches.  Remember that measures like R-squared and comparison of MSE fall short in comparing models within a given set of data.  This is because a more complex model will always out-perform a less complex model on data it can 'see.'  Using AIC, BIC, and others are useful techniques when comparing models with differing numbers of parameters, but you are still judging models based on data where the model can see all of the data.   
+
+\item[] The goal is that a model should out perform other models on data it has not seen before.  This is why cross-validation (training, test set logic) is a useful measure for judging model fit.  We want our model to out perform the other models on the test data.
+
+\item[] Linear regression is a common approach to modeling many 'real world' situations; however, there are many more algorithms that have the ability to predict better than linear regression.  If you are interested in interpretability, this is a great algorithm.  If you think you are going to find a model that predicts an outcome with better accuracy than any man ever has done before, this modeling technique should not a be a first choice.
+\end{itemize}
+
+
+
+
+\end{document}

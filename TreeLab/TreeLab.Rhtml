@@ -1,0 +1,146 @@
+<html>
+
+<head>
+<title>Tree Based Methods</title>
+</head>
+
+<body>
+<u><b><title>Tree Based Methods in R</title></b></u>
+
+<b> Classification Tree </b>
+
+<p>In this lab we will be looking at decision trees, and the ensemble methods that work alongside decision trees (bagging, random forests and boosting).  Decision trees are very intuitive in the way they make their predictions - they split based on creating the most homogeneous groups in terms of the response we are hoping to classify correctly.  Random forests, bagging, and boosting are <b>ensemble methods</b> that are frequently used in decision tree approaches.  These methods could be used with a number of other techniques used for supervised learning. </p>
+
+<p>In this lab we will use the same data we used in lab 1.  We also need to install the <b>tree</b> library.  Since we performed EDA at the beginning of the semester on this data, we will not spend time with that now.  However, you should perform a large amount of EDA before simply throwing your data into any of the techniques we are about to perform. </p>
+
+<!--begin.rcode
+library(tree)
+data = read.csv('/Users/joshuabernhard/Documents/R Labs/Lab1/SalaryAnalysis.csv')
+end.rcode-->
+
+<p> Note that we can use tree methods for both numeric and categorical response variables, and these methods can use both categorical and numeric variables as predictors on which we can make splits in our trees.  Trees where we are hoping to predict a numeric response are called <b>regression trees</b>, where methods when we aim to predict a categorical response the method is called a <b>classification tree</b>. </p>
+
+<p> For our dataset, we might build a regression tree or a classification tree depending on the variable we would like to predict.  To begin, let's try to predict which campus an employee works at based on the other categories. Without using an ensemble method, we might fit a classification tree using all columns as predictors for where the individual works.</p>
+
+<!--begin.rcode
+treemodel = tree(CAMPUS~., data=data)
+end.rcode-->
+
+<p> We will get an error from this tree because we have categorical variables with more than 32 levels: JOB.TITLE has 438 levels and DEPARTMENT has 613 levels. Therefore, we will need to remove these columns and rebuild our model.</p>
+
+<!--begin.rcode 
+data2 = data[,c(-4,-5)]
+treemodel = tree(CAMPUS~., data=data2)
+summary(treemodel)
+end.rcode-->
+
+<p> Looking at a summary of our model, we can see that we only used two of the variables to predict the campus on which individual works.  With only two variables, we are able to predict the campus for which an individual works with approximately 64% accuracy.</p>
+
+<p> We might want to look at how our tree is classifying individuals to different campuses, which we can do with the <b>plot()</b> and <b>text()</b> functions.</p>
+
+<!--begin.rcode fig.width=12, fig.height=6
+plot(treemodel)
+text(treemodel, pretty=2)
+end.rcode-->
+
+<p> We can see what our model is successfully classifying (and not classifying well) by looking at a table of predicted campus vs. actual campus values. In the table, we can see that we have not classified anyone in the SYSTEM, UCCS, or ADMIN categories correctly using this model.</p>
+
+<!--begin.rcode 
+treemodel_preds = predict(treemodel, data2, type="class")
+table(treemodel_preds, data2$CAMPUS)
+(3919+7284+511)/length(data2$CAMPUS)
+end.rcode-->
+
+<p> As suggested by the book, maybe pruning our tree might help us make better predictions.  I will set the seed for this example to assure that the result is consistent for anyone who recreates this example.  Here, I will use the <b>rpart</b> library</p>
+
+<!--begin.rcode 
+set.seed(1)
+cvtree = cv.tree(treemodel,FUN=prune.misclass)
+cvtree
+end.rcode-->
+
+<p>Here we can see that the trees with 7 and 5 terminal nodes performed best because they had the lowest deviance.  Note the tree that we used without cross-validation also had 7 terminal nodes, so we likely will not do any better with our pruned tree. We might compare these two trees to see how the misclassification rate changes (if at all). We can also compare the tree to the previous tree.</p>
+
+<!--begin.rcode fig.width=12, fig.height=6
+prunetree = prune.misclass(treemodel, best=5)
+plot(prunetree)
+text(prunetree, pretty=2)
+end.rcode-->
+
+We compare the misclassifications via the following table, which shows that a more simple tree is able to produce the same predictions as the more complex model.
+
+<!--begin.rcode 
+prunetree_preds = predict(prunetree ,data2 , type="class")
+table(prunetree_preds,data2$CAMPUS)
+end.rcode-->
+
+<p>It might be interesting to split our data into a training and test set to find out if our simple model performs better than the more complex model when predicting on data it has not 'seen'.</p>
+
+<b>Regression Tree</b>
+
+<p>We can use the same data to build a regression tree (that is the response might be numeric). Suppose we are interested in predicting the total funding an individual receive.  For this problem, I will remove the state and non-state funding as these deterministically determine the total funding.</p>
+
+<!--begin.rcode 
+rt_data = data2[,c(-5,-6)]
+regtree = tree(TOTAL.FUNDING~., data=rt_data)
+summary(regtree)
+end.rcode-->
+
+<p> Looking at a summary of our model, we can see that our model is pretty awful.  The residual mean deviance is HUGE.</p>
+
+<p>In order to create a better model, we might create 32 (or less) job categories that would classify JOB.TITLE.  Then using this new job title variable, we might have a much better classification method.  We aren't giving our model a ton to work with in this case, so it is no wonder it isn't doing a great job of predicting.  Looking at the tree, we can see that we are not differentiating individuals very well.  We are grouping individuals who have very different roles at the university all at the same salary.</p>
+
+<!--begin.rcode fig.width=12, fig.height=6
+plot(treemodel)
+text(treemodel, pretty=2)
+end.rcode-->
+
+<b>Multiple Linear Regression using Least Squares</b>
+
+<p>If we build a linear regression model, maybe we will have better luck.  This model will take some time to build, as we are able to use JOB.TITLE to predict in the linear regression model.  Note that the way these categorical variables are coded is different than in JMP.  JMP uses -1,0,1 coding, where R and Python both use 0,1 coding.  I would not recommend looking at the summary of the model, as we have a large number of betas in the model - most of which are significant simply because we have a large sample size.</p>
+
+<!--begin.rcode 
+regdata = data[,c(-2,-7,-8)]
+regmod = lm(TOTAL.FUNDING~., data=regdata)
+end.rcode-->
+
+<p>With our two models, we could compare our MSEs to see which model is performing better.  However, since our regression model was able to take advantage of using the JOB.TITLE variable it is most definitely going to fit better on the data because of this added flexibility.</p>
+
+<!--begin.rcode 
+regdata = data[,c(-2,-7,-8)]
+regmod = lm(TOTAL.FUNDING~., data=regdata)
+anova(regmod)
+end.rcode-->
+
+<p>We can see that our MSE for the regression model is almost half that of our decision tree model.  However, we should justify that we are not overfitting in our regression model.  In order to justify, we might look at the MSE associated with each of our models using a split of training and test data.</p>
+
+<!--begin.rcode 
+set.seed(2)
+train = sample(1:nrow(rt_data), nrow(rt_data)/2)
+test = -train
+tree_train_data = rt_data[train,] 
+tree_test_data = rt_data[test,]
+reg_train_data = regdata[train,]
+reg_test_data = regdata[test,]
+end.rcode-->
+
+<p>Now that our data has been split, let's fit each model to the training data.  Then we can take a look at the MSE on the test set to see which model fits better.  Here we fit a model for each method. </p>
+
+<!--begin.rcode 
+regtree2 = tree(TOTAL.FUNDING~., data=tree_train_data)
+regmod2 = lm(TOTAL.FUNDING~., data=tree_train_data)
+end.rcode-->
+
+<p>Then we check our models on the test data to see how well they fit.</p>
+
+<!--begin.rcode 
+test_tree_preds=predict(regtree2 , tree_test_data)
+test_reg_preds=predict(regmod2, tree_test_data)
+mean((test_tree_preds-tree_test_data$TOTAL.FUNDING)**2)
+mean((test_reg_preds-reg_test_data$TOTAL.FUNDING)^2)
+end.rcode-->
+
+<p>I tried using the dataset that was used for the regression models in the earlier part of this document.  However, when I split the dataset into training and test, I did not have all job titles in the training data available in the test data.  Therefore, I received an error.  Here we would want to do some major cleaning with the JOB.TITLE column before using this model to predict the salary of any one individual.</p>
+
+</body>
+</html>

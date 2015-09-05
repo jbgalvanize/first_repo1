@@ -1,0 +1,282 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Tree Based Methods</title>
+</head>
+
+<body>
+<u><b><title>Tree Based Methods in R</title></b></u>
+
+<b> Classification Tree </b>
+
+<p>In this lab we will be looking at decision trees, and the ensemble methods that work alongside decision trees (bagging, random forests and boosting).  Decision trees are very intuitive in the way they make their predictions - they split based on creating the most homogeneous groups in terms of the response we are hoping to classify correctly.  Random forests, bagging, and boosting are <b>ensemble methods</b> that are frequently used in decision tree approaches.  These methods could be used with a number of other techniques used for supervised learning. </p>
+
+<p>In this lab we will use the same data we used in lab 1.  We also need to install the <b>tree</b> library.  Since we performed EDA at the beginning of the semester on this data, we will not spend time with that now.  However, you should perform a large amount of EDA before simply throwing your data into any of the techniques we are about to perform. </p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(tree)</span>
+<span class="hl std">data</span> <span class="hl kwb">=</span> <span class="hl kwd">read.csv</span><span class="hl std">(</span><span class="hl str">'/Users/joshuabernhard/Documents/R Labs/Lab1/SalaryAnalysis.csv'</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<p> Note that we can use tree methods for both numeric and categorical response variables, and these methods can use both categorical and numeric variables as predictors on which we can make splits in our trees.  Trees where we are hoping to predict a numeric response are called <b>regression trees</b>, where methods when we aim to predict a categorical response the method is called a <b>classification tree</b>. </p>
+
+<p> For our dataset, we might build a regression tree or a classification tree depending on the variable we would like to predict.  To begin, let's try to predict which campus an employee works at based on the other categories. Without using an ensemble method, we might fit a classification tree using all columns as predictors for where the individual works.</p>
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">treemodel</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(CAMPUS</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=data)</span>
+</pre></div>
+<div class="error"><pre class="knitr r">## Error in tree(CAMPUS ~ ., data = data): factor predictors must have at most 32 levels
+</pre></div>
+</div></div>
+
+<p> We will get an error from this tree because we have categorical variables with more than 32 levels: JOB.TITLE has 438 levels and DEPARTMENT has 613 levels. Therefore, we will need to remove these columns and rebuild our model.</p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">data2</span> <span class="hl kwb">=</span> <span class="hl std">data[,</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl num">4</span><span class="hl std">,</span><span class="hl opt">-</span><span class="hl num">5</span><span class="hl std">)]</span>
+<span class="hl std">treemodel</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(CAMPUS</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=data2)</span>
+<span class="hl kwd">summary</span><span class="hl std">(treemodel)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Classification tree:
+## tree(formula = CAMPUS ~ ., data = data2)
+## Variables actually used in tree construction:
+## [1] &quot;JOB.FAMILY&quot;        &quot;NON.STATE.FUNDING&quot;
+## Number of terminal nodes:  7 
+## Residual mean deviance:  1.847 = 34120 / 18480 
+## Misclassification error rate: 0.3662 = 6769 / 18483
+</pre></div>
+</div></div>
+
+<p> Looking at a summary of our model, we can see that we only used two of the variables to predict the campus on which individual works.  With only two variables, we are able to predict the campus for which an individual works with approximately 64% accuracy.</p>
+
+<p> We might want to look at how our tree is classifying individuals to different campuses, which we can do with the <b>plot()</b> and <b>text()</b> functions.</p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">plot</span><span class="hl std">(treemodel)</span>
+<span class="hl kwd">text</span><span class="hl std">(treemodel,</span> <span class="hl kwc">pretty</span><span class="hl std">=</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-4-1.png" title="plot of chunk unnamed-chunk-4" alt="plot of chunk unnamed-chunk-4" class="plot" /></div></div>
+
+<p> We can see what our model is successfully classifying (and not classifying well) by looking at a table of predicted campus vs. actual campus values. In the table, we can see that we have not classified anyone in the SYSTEM, UCCS, or ADMIN categories correctly using this model.</p>
+
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">treemodel_preds</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(treemodel, data2,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">table</span><span class="hl std">(treemodel_preds, data2</span><span class="hl opt">$</span><span class="hl std">CAMPUS)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##                
+## treemodel_preds ANSCHUTZ BOULDER DENVER SYSTEM UCCS UCD ADMIN
+##       ANSCHUTZ      3919     844    296    168  177        60
+##       BOULDER       2190    7284    788    267  768       582
+##       DENVER         194       9    511      0  428         0
+##       SYSTEM           0       0      0      0    0         0
+##       UCCS             0       0      0      0    0         0
+##       UCD ADMIN        0       0      0      0    0         0
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">(</span><span class="hl num">3919</span><span class="hl opt">+</span><span class="hl num">7284</span><span class="hl opt">+</span><span class="hl num">511</span><span class="hl std">)</span><span class="hl opt">/</span><span class="hl kwd">length</span><span class="hl std">(data2</span><span class="hl opt">$</span><span class="hl std">CAMPUS)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.633703
+</pre></div>
+</div></div>
+
+<p> As suggested by the book, maybe pruning our tree might help us make better predictions.  I will set the seed for this example to assure that the result is consistent for anyone who recreates this example.  Here, I will use the <b>rpart</b> library</p>
+
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">set.seed</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl std">)</span>
+<span class="hl std">cvtree</span> <span class="hl kwb">=</span> <span class="hl kwd">cv.tree</span><span class="hl std">(treemodel,</span><span class="hl kwc">FUN</span><span class="hl std">=prune.misclass)</span>
+<span class="hl std">cvtree</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## $size
+## [1] 7 5 3 2 1
+## 
+## $dev
+## [1]  6762  6762  6959  7337 10346
+## 
+## $k
+## [1]   -Inf    0.0  125.5  317.0 3009.0
+## 
+## $method
+## [1] &quot;misclass&quot;
+## 
+## attr(,&quot;class&quot;)
+## [1] &quot;prune&quot;         &quot;tree.sequence&quot;
+</pre></div>
+</div></div>
+
+<p>Here we can see that the trees with 7 and 5 terminal nodes performed best because they had the lowest deviance.  Note the tree that we used without cross-validation also had 7 terminal nodes, so we likely will not do any better with our pruned tree. We might compare these two trees to see how the misclassification rate changes (if at all). We can also compare the tree to the previous tree.</p>
+
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">prunetree</span> <span class="hl kwb">=</span> <span class="hl kwd">prune.misclass</span><span class="hl std">(treemodel,</span> <span class="hl kwc">best</span><span class="hl std">=</span><span class="hl num">5</span><span class="hl std">)</span>
+<span class="hl kwd">plot</span><span class="hl std">(prunetree)</span>
+<span class="hl kwd">text</span><span class="hl std">(prunetree,</span> <span class="hl kwc">pretty</span><span class="hl std">=</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-7-1.png" title="plot of chunk unnamed-chunk-7" alt="plot of chunk unnamed-chunk-7" class="plot" /></div></div>
+
+We compare the misclassifications via the following table, which shows that a more simple tree is able to produce the same predictions as the more complex model.
+
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">prunetree_preds</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(prunetree ,data2 ,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">table</span><span class="hl std">(prunetree_preds,data2</span><span class="hl opt">$</span><span class="hl std">CAMPUS)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##                
+## prunetree_preds ANSCHUTZ BOULDER DENVER SYSTEM UCCS UCD ADMIN
+##       ANSCHUTZ      3919     844    296    168  177        60
+##       BOULDER       2190    7284    788    267  768       582
+##       DENVER         194       9    511      0  428         0
+##       SYSTEM           0       0      0      0    0         0
+##       UCCS             0       0      0      0    0         0
+##       UCD ADMIN        0       0      0      0    0         0
+</pre></div>
+</div></div>
+
+<p>It might be interesting to split our data into a training and test set to find out if our simple model performs better than the more complex model when predicting on data it has not 'seen'.</p>
+
+<b>Regression Tree</b>
+
+<p>We can use the same data to build a regression tree (that is the response might be numeric). Suppose we are interested in predicting the total funding an individual receive.  For this problem, I will remove the state and non-state funding as these deterministically determine the total funding.</p>
+
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">rt_data</span> <span class="hl kwb">=</span> <span class="hl std">data2[,</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl num">5</span><span class="hl std">,</span><span class="hl opt">-</span><span class="hl num">6</span><span class="hl std">)]</span>
+<span class="hl std">regtree</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(TOTAL.FUNDING</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=rt_data)</span>
+<span class="hl kwd">summary</span><span class="hl std">(regtree)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Regression tree:
+## tree(formula = TOTAL.FUNDING ~ ., data = rt_data)
+## Number of terminal nodes:  7 
+## Residual mean deviance:  2.094e+09 = 3.869e+13 / 18480 
+## Distribution of residuals:
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## -160600  -18900   -7038       0   12050  948100
+</pre></div>
+</div></div>
+
+<p> Looking at a summary of our model, we can see that our model is pretty awful.  The residual mean deviance is HUGE.</p>
+
+<p>In order to create a better model, we might create 32 (or less) job categories that would classify JOB.TITLE.  Then using this new job title variable, we might have a much better classification method.  We aren't giving our model a ton to work with in this case, so it is no wonder it isn't doing a great job of predicting.  Looking at the tree, we can see that we are not differentiating individuals very well.  We are grouping individuals who have very different roles at the university all at the same salary.</p>
+
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">plot</span><span class="hl std">(treemodel)</span>
+<span class="hl kwd">text</span><span class="hl std">(treemodel,</span> <span class="hl kwc">pretty</span><span class="hl std">=</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-10-1.png" title="plot of chunk unnamed-chunk-10" alt="plot of chunk unnamed-chunk-10" class="plot" /></div></div>
+
+<b>Multiple Linear Regression using Least Squares</b>
+
+<p>If we build a linear regression model, maybe we will have better luck.  This model will take some time to build, as we are able to use JOB.TITLE to predict in the linear regression model.  Note that the way these categorical variables are coded is different than in JMP.  JMP uses -1,0,1 coding, where R and Python both use 0,1 coding.  I would not recommend looking at the summary of the model, as we have a large number of betas in the model - most of which are significant simply because we have a large sample size.</p>
+
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">regdata</span> <span class="hl kwb">=</span> <span class="hl std">data[,</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl num">2</span><span class="hl std">,</span><span class="hl opt">-</span><span class="hl num">7</span><span class="hl std">,</span><span class="hl opt">-</span><span class="hl num">8</span><span class="hl std">)]</span>
+<span class="hl std">regmod</span> <span class="hl kwb">=</span> <span class="hl kwd">lm</span><span class="hl std">(TOTAL.FUNDING</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=regdata)</span>
+</pre></div>
+</div></div>
+
+<p>With our two models, we could compare our MSEs to see which model is performing better.  However, since our regression model was able to take advantage of using the JOB.TITLE variable it is most definitely going to fit better on the data because of this added flexibility.</p>
+
+<div class="chunk" id="unnamed-chunk-12"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">regdata</span> <span class="hl kwb">=</span> <span class="hl std">data[,</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl opt">-</span><span class="hl num">2</span><span class="hl std">,</span><span class="hl opt">-</span><span class="hl num">7</span><span class="hl std">,</span><span class="hl opt">-</span><span class="hl num">8</span><span class="hl std">)]</span>
+<span class="hl std">regmod</span> <span class="hl kwb">=</span> <span class="hl kwd">lm</span><span class="hl std">(TOTAL.FUNDING</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=regdata)</span>
+<span class="hl kwd">anova</span><span class="hl std">(regmod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## Analysis of Variance Table
+## 
+## Response: TOTAL.FUNDING
+##                       Df     Sum Sq    Mean Sq  F value    Pr(&gt;F)    
+## CAMPUS                 5 7.5369e+12 1.5074e+12 1239.402 &lt; 2.2e-16 ***
+## JOB.FAMILY             7 2.0753e+13 2.9647e+12 2437.672 &lt; 2.2e-16 ***
+## JOB.TITLE            435 1.4467e+13 3.3257e+10   27.345 &lt; 2.2e-16 ***
+## DEPARTMENT           607 8.2029e+12 1.3514e+10   11.111 &lt; 2.2e-16 ***
+## JOB.FULL.TIME.PCNT     1 2.2876e+12 2.2876e+12 1880.945 &lt; 2.2e-16 ***
+## Residuals          17429 2.1197e+13 1.2162e+09                       
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+</pre></div>
+</div></div>
+
+<p>We can see that our MSE for the regression model is almost half that of our decision tree model.  However, we should justify that we are not overfitting in our regression model.  In order to justify, we might look at the MSE associated with each of our models using a split of training and test data.</p>
+
+<div class="chunk" id="unnamed-chunk-13"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">set.seed</span><span class="hl std">(</span><span class="hl num">2</span><span class="hl std">)</span>
+<span class="hl std">train</span> <span class="hl kwb">=</span> <span class="hl kwd">sample</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">nrow</span><span class="hl std">(rt_data),</span> <span class="hl kwd">nrow</span><span class="hl std">(rt_data)</span><span class="hl opt">/</span><span class="hl num">2</span><span class="hl std">)</span>
+<span class="hl std">test</span> <span class="hl kwb">=</span> <span class="hl opt">-</span><span class="hl std">train</span>
+<span class="hl std">tree_train_data</span> <span class="hl kwb">=</span> <span class="hl std">rt_data[train,]</span>
+<span class="hl std">tree_test_data</span> <span class="hl kwb">=</span> <span class="hl std">rt_data[test,]</span>
+<span class="hl std">reg_train_data</span> <span class="hl kwb">=</span> <span class="hl std">regdata[train,]</span>
+<span class="hl std">reg_test_data</span> <span class="hl kwb">=</span> <span class="hl std">regdata[test,]</span>
+</pre></div>
+</div></div>
+
+<p>Now that our data has been split, let's fit each model to the training data.  Then we can take a look at the MSE on the test set to see which model fits better.  Here we fit a model for each method. </p>
+
+<div class="chunk" id="unnamed-chunk-14"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">regtree2</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(TOTAL.FUNDING</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=tree_train_data)</span>
+<span class="hl std">regmod2</span> <span class="hl kwb">=</span> <span class="hl kwd">lm</span><span class="hl std">(TOTAL.FUNDING</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span><span class="hl std">=tree_train_data)</span>
+</pre></div>
+</div></div>
+
+<p>Then we check our models on the test data to see how well they fit.</p>
+
+<div class="chunk" id="unnamed-chunk-15"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">test_tree_preds</span><span class="hl kwb">=</span><span class="hl kwd">predict</span><span class="hl std">(regtree2 , tree_test_data)</span>
+<span class="hl std">test_reg_preds</span><span class="hl kwb">=</span><span class="hl kwd">predict</span><span class="hl std">(regmod2, tree_test_data)</span>
+<span class="hl kwd">mean</span><span class="hl std">((test_tree_preds</span><span class="hl opt">-</span><span class="hl std">tree_test_data</span><span class="hl opt">$</span><span class="hl std">TOTAL.FUNDING)</span><span class="hl opt">**</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 2101880388
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">mean</span><span class="hl std">((test_reg_preds</span><span class="hl opt">-</span><span class="hl std">reg_test_data</span><span class="hl opt">$</span><span class="hl std">TOTAL.FUNDING)</span><span class="hl opt">^</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 2255725973
+</pre></div>
+</div></div>
+
+<p>I tried using the dataset that was used for the regression models in the earlier part of this document.  However, when I split the dataset into training and test, I did not have all job titles in the training data available in the test data.  Therefore, I received an error.  Here we would want to do some major cleaning with the JOB.TITLE column before using this model to predict the salary of any one individual.</p>
+
+</body>
+</html>

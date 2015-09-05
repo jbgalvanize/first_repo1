@@ -1,0 +1,136 @@
+<html>
+
+<head>
+<title>Lab 1</title>
+</head>
+
+<body>
+<u><b>Lab 1</b></u>
+
+<p>The aim of this lab is to understand more about the salaries of individuals employed at the University of Colorado.  The csv file in Canvas provides salary data from all individuals employed across all Univeristy of Colorado (Boulder, Denver, Anschutz, and Colorado Springs) from last year.  We might start by taking a look at some basic characteristics of this dataset.</p>
+
+<!--begin.rcode
+data = read.csv('/Users/joshuabernhard/Documents/R Labs/Lab1/SalaryAnalysis.csv')
+head(data)
+tail(data)
+str(data)
+dim(data)
+end.rcode-->
+
+<p>We can see there are 9 variables in the dataset.  There were 18,485 individuals employed when the data were collected (last year).  We can see there are three types of variables in the datset: Factor (categorical), int (integer), and num (numeric, continuous)</p>
+
+<p>We might try to understand basic information regarding each of the variables.  Note the attach function will attach your dataset, so you do not need to specify using '$' which variable you are interested in; rather, you can simply ask for specific columns without having to specify the dataset.  For factors, we will use the <b>table()</b> command to take a look at summary of the data.  If we devide by the length, we can get our results as percentages.  For numeric or integer data, we use the <b>summary()</b> command to better understand the values that are present.</p>
+
+<!--begin.rcode
+attach(data)
+table(CAMPUS)
+table(CAMPUS)/length(CAMPUS)
+table(JOB.FAMILY)
+#table(JOB.TITLE) #Not running these because of the many levels
+#table(DEPARTMENT) #Not running these because of the many levels
+summary(JOB.FULL.TIME.PCNT)
+summary(STATE.FUNDING)
+summary(NON.STATE.FUNDING)
+summary(TOTAL.FUNDING)
+end.rcode-->
+
+<p>We might choose to look at subsets of our columns.  For example, we might only care about the summary of the data where the state funding or non-state funding is non-zero.  We could look at this information by using the commands below.  The square brackets tell us to only look at the state funding where (this is the square brackets) the state funding is positive. This is done similarly for the non-state funding.</p>
+
+<!--begin.rcode
+summary(STATE.FUNDING[STATE.FUNDING>0])
+summary(NON.STATE.FUNDING[NON.STATE.FUNDING>0])
+end.rcode-->
+
+<p>We can subset our column based on the characteristics of other columns as well.  For example, the code below provides the total funding for individuals with the job title of instructor.  We might want to choose the total funding based on job categories, campus, or a number of other factors.</p>
+
+<!--begin.rcode
+summary(TOTAL.FUNDING[JOB.TITLE == "INSTRUCTOR"])
+end.rcode-->
+<p>We could try some additional ways of subsetting.  Note that if you want an entire data frame back, you will need to use the <b>subset()</b> command.  Square brackets are only used when you want to subset a 'vector' or a single column.</p>
+
+<ol>
+<li>We could want to return a new data frame called <b>profs</b> that is only professors.</li>
+
+<!--begin.rcode
+profs = subset(data, JOB.TITLE == "PROFESSOR")
+end.rcode-->
+
+<li>We could want only professors with full time employment.</li>
+
+<!--begin.rcode
+fullprofs = subset(data, JOB.TITLE == "PROFESSOR" & JOB.FULL.TIME.PCNT == 100)
+end.rcode-->
+
+<li>We could want only professors with full time employment.</li>
+
+<!--begin.rcode
+fullprofs = subset(data, JOB.TITLE == "PROFESSOR" & JOB.FULL.TIME.PCNT == 100)
+end.rcode-->
+
+<li>We could ask questions like: given that an individual works on the Denver campus, what is the probability that the individual is full time and earns more than 100k each in full funding.  You are using Bayes' rule to find this probability. The <b>length()</b> command tells us how many elements are in our vector.</li>
+
+<!--begin.rcode
+length(TOTAL.FUNDING[CAMPUS == "DENVER" & JOB.FULL.TIME.PCNT == 100 & 
+                       TOTAL.FUNDING >100000])/length(TOTAL.FUNDING[CAMPUS == "DENVER"])
+end.rcode-->
+
+<li>If wanted individuals who are at Denver or Boulder (not just Denver), but still met the above criteria, we can find this using the following command:</li>
+
+<!--begin.rcode
+length(TOTAL.FUNDING[(CAMPUS == "DENVER" | CAMPUS == "BOULDER") & 
+                       JOB.FULL.TIME.PCNT == 100 & TOTAL.FUNDING >100000])/
+                      length(TOTAL.FUNDING[CAMPUS == "DENVER" | CAMPUS == "BOULDER"])
+end.rcode-->
+
+</ol>
+
+<p>We could ask many other questions similar to those asked above, but for now, we might move on to using ggplot2 to create visual displays of our data.</p>
+
+<p>We might want to look at a plot of the data.  If our data is quantitative, the most common plot that is used is a histogram, which we can produce using <b>hist()</b> in the base package.  We might also install <b>ggplot2</b> and use the <b>qplot()</b> function.</p>
+
+<!--begin.rcode fig.width=12, fig.height=6
+hist(TOTAL.FUNDING[JOB.TITLE == "PROFESSOR"], breaks=100, xlab="Total Funding", 
+     main = "Professor Total Funding")
+end.rcode-->
+
+<!--begin.rcode fig.width=12, fig.height=6
+library(ggplot2)
+qplot(TOTAL.FUNDING[JOB.TITLE == "PROFESSOR"], xlab="Total Funding", 
+      main = "Professor Total Funding")
+
+qplot(TOTAL.FUNDING[JOB.TITLE == "PROFESSOR"], xlab="Total Funding", 
+      main = "Professor Total Funding", fill = CAMPUS[JOB.TITLE == "PROFESSOR"])
+
+qplot(TOTAL.FUNDING[JOB.TITLE == "SENIOR INSTRUCTOR"], xlab="Total Funding", 
+      main = "Senior Instructor Total Funding", 
+      fill = CAMPUS[JOB.TITLE == "SENIOR INSTRUCTOR"])
+end.rcode-->
+
+<p>We might subset our data before we plot some of the information.  </p>
+
+<!--begin.rcode fig.width=12, fig.height=6
+#levels(JOB.TITLE) Provides all the levels of a categorical variable
+newdata = subset(data, JOB.TITLE == "INSTRUCTOR" | JOB.TITLE == "SENIOR INSTRUCTOR" |
+                   JOB.TITLE == "PROFESSOR" | JOB.TITLE == "ASSISTANT PROFESSOR" |
+                   JOB.TITLE == "ASSOCIATE PROFESSOR" | JOB.TITLE == "VISITING ASST 
+                   PROFESSOR")
+
+qplot(TOTAL.FUNDING, data = newdata, fill = JOB.TITLE, main = "Total Funding",
+      xlab="Total.Funding")
+end.rcode-->
+
+<p>Given the ambiguity of determining salaries based on the plot, we might just look at summary statistics for each group.  Moving forward to look at bivariate information.  There isn't a ton to work with in this dataset regarding comparing quantitative data, but we might compare state funding to total funding to simply illustrate a plot you could make with quantitative data.</p>
+
+<!--begin.rcode fig.width=12, fig.height=6
+qplot(STATE.FUNDING, TOTAL.FUNDING, data = newdata, col = JOB.TITLE, 
+      main = "Total Funding by State Funding", xlab="State Funding",
+      ylab='Total Funding')
+qplot(JOB.TITLE, TOTAL.FUNDING, data = newdata, geom = "boxplot",
+      main = "Total Funding by Title", xlab="Job Title",
+      ylab='Total Funding')
+end.rcode-->
+
+<p>Other useful functions that I use frequently that are not shown here are <b>by()</b>, <b>apply()</b>, and <b>grep()</b>.  You can see examples of these functions <a href="http://davetang.org/muse/2013/05/22/using-aggregate-and-apply-in-r/">here</a> and <a href="https://www.youtube.com/watch?v=5XchfRwd914">here</a>.  The by and apply commands perform aggregate functions on a group that has a similar charcteristic.  I might use these functions if I wanted the average total funding for each job title or for each campus.  The grep command is similar to a vlookup in excel.</p>
+
+</body>
+</html>

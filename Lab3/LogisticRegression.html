@@ -1,0 +1,340 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Logistic Regression Lab</title>
+</head>
+
+<b>Logistic Regression</b>
+<br></br>
+<body>
+
+<p>In this lab, we are going to be working through an example of logistic regression to get a basic understanding of how we can do this in R.  Before getting into the code, it is important to understand what type of situation we are modeling, and how we are going about modeling the situation.</p>
+
+<p>The definition of <b>logistic regression</b> to most is the following:</p>
+
+<ul>
+  <li> We want to model a binary outcome outcome by linking a log-odds ratio to a linear combination of predictor variables.
+  <li> We estimate our coefficients using maximum likelihood (which is different than what we do for multiple linear regression in 6530 and 6620).
+  <li> Maximum likelihood is acheived by using an algorithm known as Fisher's Scoring algorithm.
+</ul>
+
+<p>Note, that both linear regression as you have seen before (with a normally distributed response) and logistic regression, as described above, are two potential techniques that are a subset of what are known as <b>Generalized Linear Models</b>.  You may also choose a different distribution for the response variable (Poisson and Multinomial distributions are very common), which would create another case of a generalized linear model. For the purpose of this document, we will focus on how the logistic model outlined above works.  This is also the model discussed in the text.</p>
+
+<p>Following off the other set of notes, let's consider a dataset to put these ideas to practice.  I am going to consider an example of this process shown to in the following <a href="http://www.public.iastate.edu/~dnett/S511/33GeneralizedLinearModels.pdf">slides</a>.  The dataset used we will use can be found <a href="http://www.public.iastate.edu/~dnett/S511/Disease.txt">here</a>.</p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">d</span> <span class="hl kwb">=</span> <span class="hl kwd">read.delim</span><span class="hl std">(</span><span class="hl str">&quot;http://www.public.iastate.edu/~dnett/S511/Disease.txt&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(d)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##   id age ses sector disease savings
+## 1  1  33   1      1       0       1
+## 2  2  35   1      1       0       1
+## 3  3   6   1      1       0       0
+## 4  4  60   1      1       0       1
+## 5  5  18   3      1       1       0
+## 6  6  26   3      1       0       0
+</pre></div>
+</div></div>
+
+<p>For this particular dataset, we are interested in predicting whether or not an individual will get a particular disease.  You can see that this variable is coded as 0 for 'no disease' and 1 for 'disease'.  The variables we will use to attempt to predict whether or not someone obtains a disease include:</p>
+
+<ul>
+  <li>Age (in years)
+  <li>Socioeconomic Status (1 = upper, 2 = middle, 3 = lower)
+  <li>Sector (1 or 2)
+</ul>
+
+<p>I am not sure what the savings column represents, so we will not be using it for the purpose of this lab.  We should start with an in-depth look at EDA.  I will do a few quick steps to see what the data looks like, but you should really perform more EDA with your data (especially if it is not 'clean') in practice.  We do have a little bit of cleaning; becauase we are counting scocioeconomic status, sector, and disease as integers, but these are categories.  Therefore, the should actually be considered as factors.  </p>
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">attach</span><span class="hl std">(d)</span>
+<span class="hl kwd">library</span><span class="hl std">(ggplot2)</span>
+<span class="hl kwd">str</span><span class="hl std">(d)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 'data.frame':	196 obs. of  6 variables:
+##  $ id     : int  1 2 3 4 5 6 7 8 9 10 ...
+##  $ age    : int  33 35 6 60 18 26 6 31 26 37 ...
+##  $ ses    : int  1 1 1 1 3 3 3 2 2 2 ...
+##  $ sector : int  1 1 1 1 1 1 1 1 1 1 ...
+##  $ disease: int  0 0 0 0 1 0 0 1 1 0 ...
+##  $ savings: int  1 1 0 1 0 0 0 1 0 0 ...
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">d</span><span class="hl opt">$</span><span class="hl std">ses</span> <span class="hl kwb">=</span> <span class="hl kwd">as.factor</span><span class="hl std">(ses)</span>
+<span class="hl std">d</span><span class="hl opt">$</span><span class="hl std">sector</span> <span class="hl kwb">=</span> <span class="hl kwd">as.factor</span><span class="hl std">(sector)</span>
+<span class="hl std">d</span><span class="hl opt">$</span><span class="hl std">disease</span> <span class="hl kwb">=</span> <span class="hl kwd">as.factor</span><span class="hl std">(disease)</span>
+</pre></div>
+</div></div>
+
+<p>Taking a look at some EDA, I created the following plots.  You may choose to use the rcharts library to do additional EDA.  I have also commented out these plots for the ease of reading this document.</p>
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#qplot(age, fill = ses, xlab = &quot;Age&quot;, binwidth = 2, data = d, </span>
+<span class="hl com">#      main = &quot;Histogram of Age, color by Socioeconomic Status&quot;)</span>
+
+<span class="hl com">#qplot(ses, fill = sector, data = d, main = &quot;Sector by Socioeconomic Status&quot;)</span>
+</pre></div>
+</div></div>
+
+<p>We can see that there is a fairly even mix of socioeconomic status within each age range.  There are few individuals that are in soceioeconomic status '2'.  Additionally, the proportion of sector 2 individuals is smallest within the socioeconomic status 3. We can see that the proportion of disease individuals is essentially 25% regardless of socioeconomic status.  However, sector creates very different probabilities for obtaining the disease.  It is easy to see that sector 2 is much more likely to obtain the disease than sector 1.  We can also see that older individuals are more likely to obtain the disease than younger individuals.</p>
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#plot(d$ses, d$disease, xlab = &quot;ses&quot;, ylab=&quot;disease&quot;)</span>
+<span class="hl com">#plot(d$sector, d$disease, xlab = &quot;sector&quot;, ylab=&quot;disease&quot;)</span>
+
+<span class="hl com">#ggplot(d, aes(factor(disease), age)) + geom_boxplot()</span>
+<span class="hl com">#qplot(d$disease)</span>
+</pre></div>
+</div></div>
+
+<p><a href="http://docs.ggplot2.org/0.9.3.1/geom_boxplot.html">Here</a> are some additional tools you can use with boxplots.  We can also see that about 75% of our individuals do not have the disease.  This is important, because in cases where there are only a few instances of 'disease' or 'success,' it can be really difficult to predict the probability of such an event.</p>
+
+<p>As for fitting a logistic model to our data, please reference the corresponding documentation regarding the mathematical portion (although it will be discussed with less math symbols in this lab), rather than this documentation for those details.</p>
+
+<p>In the base package of R, there is a <b>glm()</b> function that will give you the ability of fitting any generalized linear model.  The logistic regression model is the one we will be interested in fitting, as we attempt to predict whether or not an individual obtains a disease based on the factors described.  For more information about the glm function type <b>?glm</b>.</p>
+
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">glm_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">glm</span><span class="hl std">(disease</span><span class="hl opt">~</span><span class="hl std">age</span><span class="hl opt">+</span><span class="hl std">ses</span><span class="hl opt">+</span><span class="hl std">sector,</span>
+              <span class="hl kwc">family</span><span class="hl std">=</span><span class="hl kwd">binomial</span><span class="hl std">(</span><span class="hl kwc">link</span><span class="hl std">=logit),</span> <span class="hl kwc">data</span><span class="hl std">=d)</span>
+</pre></div>
+</div></div>
+
+<p>We can obtain the output from this model using the <b>summary()</b> command.  This is the same way we obtain a summary from our linear model; the way we did in the first lab.  You can see we specified the distribution of the response as binomial (because we are looking at whether or not an individual gets a disease, which follows a binomial distribution), and we specified the link as logit.  The logit link is also the default, but you can note that there are other links that you can use that are discussed in the lecture slides referenced at the top of this document.</p>
+
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(glm_mod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## glm(formula = disease ~ age + ses + sector, family = binomial(link = logit), 
+##     data = d)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.6576  -0.8295  -0.5652   1.0092   2.0842  
+## 
+## Coefficients:
+##              Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -2.293933   0.436769  -5.252  1.5e-07 ***
+## age          0.026991   0.008675   3.111 0.001862 ** 
+## ses2         0.044609   0.432490   0.103 0.917849    
+## ses3         0.253433   0.405532   0.625 0.532011    
+## sector2      1.243630   0.352271   3.530 0.000415 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 236.33  on 195  degrees of freedom
+## Residual deviance: 211.22  on 191  degrees of freedom
+## AIC: 221.22
+## 
+## Number of Fisher Scoring iterations: 3
+</pre></div>
+</div></div>
+
+<p>As the dataset is not massive (only about 200 rows), we still have the ability to interpret our p-values in this context.  We can see what we saw from our visual methods; age and sector seem to be associated with obtaining the disease.  We can interpret the coefficients in logistic regression directly as well.<\p>  
+
+<p>Based on the individual p-values, we may choose to remove the socioeconomic status, which then gives us a new model of the following form:
+
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">glm_new_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">glm</span><span class="hl std">(disease</span><span class="hl opt">~</span><span class="hl std">age</span><span class="hl opt">+</span><span class="hl std">sector,</span>
+              <span class="hl kwc">family</span><span class="hl std">=</span><span class="hl kwd">binomial</span><span class="hl std">(</span><span class="hl kwc">link</span><span class="hl std">=logit),</span> <span class="hl kwc">data</span><span class="hl std">=d)</span>
+<span class="hl kwd">summary</span><span class="hl std">(glm_new_mod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## glm(formula = disease ~ age + sector, family = binomial(link = logit), 
+##     data = d)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.6839  -0.8199  -0.5606   1.0093   2.0275  
+## 
+## Coefficients:
+##             Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -2.15966    0.34388  -6.280 3.38e-10 ***
+## age          0.02681    0.00865   3.100 0.001936 ** 
+## sector2      1.18169    0.33696   3.507 0.000453 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 236.33  on 195  degrees of freedom
+## Residual deviance: 211.64  on 193  degrees of freedom
+## AIC: 217.64
+## 
+## Number of Fisher Scoring iterations: 3
+</pre></div>
+</div></div>
+
+
+<p>Note that we have a mix of categorical and numeric predictors.  For all categorical predictors, R is using 0, 1 coding in logistic regression, the same way it does in linear regression.  Therefore, the level that is not being shown is in the baseline of the model. In order to interpret the coefficients, it is important to remember that we are building a model that equates to the log odds.  Therefore, we take the exponential of the coefficients before interpretting this as the change in odds.</p>
+
+<p>For the output above, this we can interpret the coefficient attached to age in the following way:  For every year increase in age, an individual is expected to have a multiplicative increase in the odds of getting the disease by exp(0.0268) holding all other variables constant.  Since exp(0.0268) is equal to 1.027, we can interpret this as the odds increase by approximately 2.7% for each additional year an individual lives when holding all other variables constant.</p>
+
+<p>When interpretting the coefficient attached to a categorical variable, we combine the idea above with what already are familiar with from categorical variables in multiple linear regression.  This means that when interpreting the coefficient attached to Sector2, we are essentially comparing Sector2 to the baseline, which is Sector1.  Again, we take the exponential of the coefficient, and this provides the predicted change in the odds.  Therefore, we have exp(1.18) as the expected multiplicative increase in the odds for someone in Sector 2 vs Sector 1, holding all else constant. Alternatively, living in sector 2 increasesyour odds of obtaining the disease by an estimated 225%.</p>
+
+<p>There is a second, more elaborate example also available in the slides at the beginning of this document that you may also choose to work through. The second example looks at how to judge model fit on a particular set of data.  However, in this class, we will not be focusing on inference or fit on the actual dataset.  We want to focus on how well our model predicts on new data.</p> 
+
+<p>Given the purpose of this class is on machine learning and prediction. We will look at how well our model predicts when creating a training and test dataset.  A common way to look at how well our model predicts when we are working with a categorical variable is by using a confusion matrix.  A confusion matrix allows us to quickly view what we are predicting correctly, and what we are predicting incorrectly.</p>
+
+<p>I am going to split the data into training and validation datasets, so that we can implement such a technique. Then we can take a look at some of the common techniques for machine learning modeling in judging model fit.  In general, most people focus on three ways to judge model fit in classification problems when prediction is our only goal: recall, precision, and accuracy.  Building a confusion matrix makes it easy to see each of these elements of the model fit.</p>
+
+<p>The <a href = "https://en.wikipedia.org/wiki/Precision_and_recall"> wikipedia <a> page on this topic is useful, but is overally complicated for the purposes of this class.  Essentially, for our above example we can define the following:</p>
+
+<ul>
+  <li> True Positive (Sensitivity): Deciding that an individual will get the disease, and they actually get the disease.
+  <li> True Negative (Specificity): Deciding an individual will not get the disease, and they actually do not get the disease.
+  <li> False Positive: Deciding an individual has the disease, but they do not have the disease.
+  <li> False Negative: Deciding an individual does not have the disease, but hey actually have the disease.
+</ul>
+
+<p>A confusion matrix essentially fills in counts for the number of data points that fall into each of the above cases.  We would like to build an algorithm that would only classigy points in the true positive and true negative boxes. Unfortunately, as with Type I and Type II errors in hypothesis tests, the less likely you are to make a Type I error, the more likely you are to make a Type II error (and vice versa).</p>
+
+<p>We can also define those terms of precision, recall, and accuracy based on our knowledge of these items.</p>
+<ul>
+  <li> Precision = True Positives/(True Positives + False Positives)
+  <li> Recall = True Positive/(True Positives + False Negatives)
+  <li> Accuracy = Total Correct/(Total Cases to Predict) 
+</ul>
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">set.seed</span><span class="hl std">(</span><span class="hl num">12</span><span class="hl std">)</span>
+<span class="hl std">train_ind</span> <span class="hl kwb">=</span> <span class="hl kwd">sample</span><span class="hl std">(</span><span class="hl kwd">nrow</span><span class="hl std">(d),</span> <span class="hl kwd">nrow</span><span class="hl std">(d)</span><span class="hl opt">/</span><span class="hl num">2</span><span class="hl std">)</span>
+<span class="hl std">train_d</span> <span class="hl kwb">=</span> <span class="hl std">d[train_ind,]</span>
+<span class="hl std">test_d</span> <span class="hl kwb">=</span> <span class="hl std">d[</span><span class="hl opt">-</span><span class="hl std">train_ind,]</span>
+<span class="hl std">glm_new_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">glm</span><span class="hl std">(disease</span><span class="hl opt">~</span><span class="hl std">age</span><span class="hl opt">+</span><span class="hl std">sector,</span>
+              <span class="hl kwc">family</span><span class="hl std">=</span><span class="hl kwd">binomial</span><span class="hl std">(</span><span class="hl kwc">link</span><span class="hl std">=logit),</span> <span class="hl kwc">data</span><span class="hl std">=train_d)</span>
+<span class="hl kwd">summary</span><span class="hl std">(glm_new_mod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Call:
+## glm(formula = disease ~ age + sector, family = binomial(link = logit), 
+##     data = train_d)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.8497  -0.8303  -0.5609   0.9911   1.9189  
+## 
+## Coefficients:
+##             Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -2.03390    0.45918  -4.429 9.45e-06 ***
+## age          0.04061    0.01365   2.975  0.00293 ** 
+## sector2      0.90550    0.46517   1.947  0.05158 .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 126.52  on 97  degrees of freedom
+## Residual deviance: 110.25  on 95  degrees of freedom
+## AIC: 116.25
+## 
+## Number of Fisher Scoring iterations: 4
+</pre></div>
+</div></div>
+
+<p>Now that we have fit our model on the training data, we can see how our model performs on the training and the test data by building a confusion matrix of the results on each, and we might also choose to compute precision, recall, and accuracy. </p>
+
+<p>First, I must obtain the predicted values of our model, which I do for both the test and the training data.  Note the predicted value that is given is a probability that an individual obtains the disease.  We then will need to classify to 'disease' or 'no disease.'  A common approach to classify these is if our probability of disease is greater than 50%, we classify as 'disease,' else 'no disease.'  Although this is a common splitting technique (and I used it below), we could choose another probability to split. </p>
+
+<p>Choosing a higher probability before deciding an individual has the disease would make it less likely to classify any person as having the disease, which means we will make fewer errors where we classify an individual as having the disease when they don't.  Alternatively, we will make more errors where we classify individuals as not having the disease, but they actually have the disease.  Choosing a lower value for p, would mean more errors where we classify an individual as having the disease when they don't.  We would, however, make fewer errors where we classify individuals as not having the disease, but they actually have the disease.</p>
+
+<p>Here, I have used my model to make predictions, and then classified each individual as having the disease or not based on the probability of having the disease being greater than 0.5.  I did this for both the test and training data using the training model.</p>
+
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mod_train_preds</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(glm_new_mod, train_d,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;response&quot;</span><span class="hl std">)</span>
+<span class="hl std">mod_test_preds</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(glm_new_mod, test_d,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;response&quot;</span><span class="hl std">)</span>
+
+<span class="hl std">train_pred_disease</span> <span class="hl kwb">=</span> <span class="hl kwd">rep</span><span class="hl std">(</span><span class="hl str">&quot;No Disease&quot;</span><span class="hl std">,</span> <span class="hl kwd">length</span><span class="hl std">(mod_train_preds))</span>
+<span class="hl std">train_pred_disease[mod_train_preds</span> <span class="hl opt">&gt;</span> <span class="hl num">0.5</span><span class="hl std">]</span> <span class="hl kwb">=</span> <span class="hl str">&quot;Disease&quot;</span>
+
+<span class="hl std">test_pred_disease</span> <span class="hl kwb">=</span> <span class="hl kwd">rep</span><span class="hl std">(</span><span class="hl str">&quot;No Disease&quot;</span><span class="hl std">,</span> <span class="hl kwd">length</span><span class="hl std">(mod_test_preds))</span>
+<span class="hl std">test_pred_disease[mod_test_preds</span> <span class="hl opt">&gt;</span> <span class="hl num">0.5</span><span class="hl std">]</span> <span class="hl kwb">=</span> <span class="hl str">&quot;Disease&quot;</span>
+</pre></div>
+</div></div>
+
+<p>We can then build our confusion matrix using the <b>table()</b> function.  Here, we have the confusion matrix for the training data</p>
+
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(train_d</span><span class="hl opt">$</span><span class="hl std">disease, train_pred_disease)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    train_pred_disease
+##     Disease No Disease
+##   0       7         57
+##   1      12         22
+</pre></div>
+</div></div>
+
+<p>Then, on our test data, we can find the confusion matrix, as well:</p>
+
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(test_d</span><span class="hl opt">$</span><span class="hl std">disease, test_pred_disease)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    test_pred_disease
+##     Disease No Disease
+##   0      15         60
+##   1      10         13
+</pre></div>
+</div></div>
+
+<p>We really care about how well our model is doing on the test data.  Note the top is what we predict, where the 0, 1 represents the truth in the data.  We can find the following:</p>
+<ul>
+  <li> Precision = 10/(10 + 15)
+  <li> Recall = 10/(10 + 13)
+  <li> Accuracy = 70/(98) 
+</ul>
+
+<p>We could then see if our model will perform better when considering other predictors, or combination of predictors.  We might also try changing our probability cutoff.</p>
+
+</body>
+</html>

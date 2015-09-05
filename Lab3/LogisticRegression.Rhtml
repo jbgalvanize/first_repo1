@@ -1,0 +1,174 @@
+<html>
+
+<head>
+<title>Logistic Regression Lab</title>
+</head>
+
+<b>Logistic Regression</b>
+<br></br>
+<body>
+
+<p>In this lab, we are going to be working through an example of logistic regression to get a basic understanding of how we can do this in R.  Before getting into the code, it is important to understand what type of situation we are modeling, and how we are going about modeling the situation.</p>
+
+<p>The definition of <b>logistic regression</b> to most is the following:</p>
+
+<ul>
+  <li> We want to model a binary outcome outcome by linking a log-odds ratio to a linear combination of predictor variables.
+  <li> We estimate our coefficients using maximum likelihood (which is different than what we do for multiple linear regression in 6530 and 6620).
+  <li> Maximum likelihood is acheived by using an algorithm known as Fisher's Scoring algorithm.
+</ul>
+
+<p>Note, that both linear regression as you have seen before (with a normally distributed response) and logistic regression, as described above, are two potential techniques that are a subset of what are known as <b>Generalized Linear Models</b>.  You may also choose a different distribution for the response variable (Poisson and Multinomial distributions are very common), which would create another case of a generalized linear model. For the purpose of this document, we will focus on how the logistic model outlined above works.  This is also the model discussed in the text.</p>
+
+<p>Following off the other set of notes, let's consider a dataset to put these ideas to practice.  I am going to consider an example of this process shown to in the following <a href="http://www.public.iastate.edu/~dnett/S511/33GeneralizedLinearModels.pdf">slides</a>.  The dataset used we will use can be found <a href="http://www.public.iastate.edu/~dnett/S511/Disease.txt">here</a>.</p>
+
+<!--begin.rcode
+d = read.delim("http://www.public.iastate.edu/~dnett/S511/Disease.txt")
+head(d)
+end.rcode-->
+
+<p>For this particular dataset, we are interested in predicting whether or not an individual will get a particular disease.  You can see that this variable is coded as 0 for 'no disease' and 1 for 'disease'.  The variables we will use to attempt to predict whether or not someone obtains a disease include:</p>
+
+<ul>
+  <li>Age (in years)
+  <li>Socioeconomic Status (1 = upper, 2 = middle, 3 = lower)
+  <li>Sector (1 or 2)
+</ul>
+
+<p>I am not sure what the savings column represents, so we will not be using it for the purpose of this lab.  We should start with an in-depth look at EDA.  I will do a few quick steps to see what the data looks like, but you should really perform more EDA with your data (especially if it is not 'clean') in practice.  We do have a little bit of cleaning; becauase we are counting scocioeconomic status, sector, and disease as integers, but these are categories.  Therefore, the should actually be considered as factors.  </p>
+
+<!--begin.rcode 
+attach(d)
+library(ggplot2)
+str(d)
+d$ses = as.factor(ses)
+d$sector = as.factor(sector)
+d$disease = as.factor(disease)
+end.rcode-->
+
+<p>Taking a look at some EDA, I created the following plots.  You may choose to use the rcharts library to do additional EDA.  I have also commented out these plots for the ease of reading this document.</p>
+<!--begin.rcode hide = TRUE
+#qplot(age, fill = ses, xlab = "Age", binwidth = 2, data = d, 
+#      main = "Histogram of Age, color by Socioeconomic Status")
+
+#qplot(ses, fill = sector, data = d, main = "Sector by Socioeconomic Status")
+end.rcode-->
+
+<p>We can see that there is a fairly even mix of socioeconomic status within each age range.  There are few individuals that are in soceioeconomic status '2'.  Additionally, the proportion of sector 2 individuals is smallest within the socioeconomic status 3. We can see that the proportion of disease individuals is essentially 25% regardless of socioeconomic status.  However, sector creates very different probabilities for obtaining the disease.  It is easy to see that sector 2 is much more likely to obtain the disease than sector 1.  We can also see that older individuals are more likely to obtain the disease than younger individuals.</p>
+<!--begin.rcode 
+#plot(d$ses, d$disease, xlab = "ses", ylab="disease")
+#plot(d$sector, d$disease, xlab = "sector", ylab="disease")
+
+#ggplot(d, aes(factor(disease), age)) + geom_boxplot()
+#qplot(d$disease)
+end.rcode-->
+
+<p><a href="http://docs.ggplot2.org/0.9.3.1/geom_boxplot.html">Here</a> are some additional tools you can use with boxplots.  We can also see that about 75% of our individuals do not have the disease.  This is important, because in cases where there are only a few instances of 'disease' or 'success,' it can be really difficult to predict the probability of such an event.</p>
+
+<p>As for fitting a logistic model to our data, please reference the corresponding documentation regarding the mathematical portion (although it will be discussed with less math symbols in this lab), rather than this documentation for those details.</p>
+
+<p>In the base package of R, there is a <b>glm()</b> function that will give you the ability of fitting any generalized linear model.  The logistic regression model is the one we will be interested in fitting, as we attempt to predict whether or not an individual obtains a disease based on the factors described.  For more information about the glm function type <b>?glm</b>.</p>
+
+<!--begin.rcode 
+glm_mod = glm(disease~age+ses+sector, 
+              family=binomial(link=logit), data=d)
+end.rcode-->
+
+<p>We can obtain the output from this model using the <b>summary()</b> command.  This is the same way we obtain a summary from our linear model; the way we did in the first lab.  You can see we specified the distribution of the response as binomial (because we are looking at whether or not an individual gets a disease, which follows a binomial distribution), and we specified the link as logit.  The logit link is also the default, but you can note that there are other links that you can use that are discussed in the lecture slides referenced at the top of this document.</p>
+
+<!--begin.rcode 
+summary(glm_mod)
+end.rcode-->
+
+<p>As the dataset is not massive (only about 200 rows), we still have the ability to interpret our p-values in this context.  We can see what we saw from our visual methods; age and sector seem to be associated with obtaining the disease.  We can interpret the coefficients in logistic regression directly as well.<\p>  
+
+<p>Based on the individual p-values, we may choose to remove the socioeconomic status, which then gives us a new model of the following form:
+
+<!--begin.rcode 
+glm_new_mod = glm(disease~age+sector, 
+              family=binomial(link=logit), data=d)
+summary(glm_new_mod)
+end.rcode-->
+
+
+<p>Note that we have a mix of categorical and numeric predictors.  For all categorical predictors, R is using 0, 1 coding in logistic regression, the same way it does in linear regression.  Therefore, the level that is not being shown is in the baseline of the model. In order to interpret the coefficients, it is important to remember that we are building a model that equates to the log odds.  Therefore, we take the exponential of the coefficients before interpretting this as the change in odds.</p>
+
+<p>For the output above, this we can interpret the coefficient attached to age in the following way:  For every year increase in age, an individual is expected to have a multiplicative increase in the odds of getting the disease by exp(0.0268) holding all other variables constant.  Since exp(0.0268) is equal to 1.027, we can interpret this as the odds increase by approximately 2.7% for each additional year an individual lives when holding all other variables constant.</p>
+
+<p>When interpretting the coefficient attached to a categorical variable, we combine the idea above with what already are familiar with from categorical variables in multiple linear regression.  This means that when interpreting the coefficient attached to Sector2, we are essentially comparing Sector2 to the baseline, which is Sector1.  Again, we take the exponential of the coefficient, and this provides the predicted change in the odds.  Therefore, we have exp(1.18) as the expected multiplicative increase in the odds for someone in Sector 2 vs Sector 1, holding all else constant. Alternatively, living in sector 2 increasesyour odds of obtaining the disease by an estimated 225%.</p>
+
+<p>There is a second, more elaborate example also available in the slides at the beginning of this document that you may also choose to work through. The second example looks at how to judge model fit on a particular set of data.  However, in this class, we will not be focusing on inference or fit on the actual dataset.  We want to focus on how well our model predicts on new data.</p> 
+
+<p>Given the purpose of this class is on machine learning and prediction. We will look at how well our model predicts when creating a training and test dataset.  A common way to look at how well our model predicts when we are working with a categorical variable is by using a confusion matrix.  A confusion matrix allows us to quickly view what we are predicting correctly, and what we are predicting incorrectly.</p>
+
+<p>I am going to split the data into training and validation datasets, so that we can implement such a technique. Then we can take a look at some of the common techniques for machine learning modeling in judging model fit.  In general, most people focus on three ways to judge model fit in classification problems when prediction is our only goal: recall, precision, and accuracy.  Building a confusion matrix makes it easy to see each of these elements of the model fit.</p>
+
+<p>The <a href = "https://en.wikipedia.org/wiki/Precision_and_recall"> wikipedia <a> page on this topic is useful, but is overally complicated for the purposes of this class.  Essentially, for our above example we can define the following:</p>
+
+<ul>
+  <li> True Positive (Sensitivity): Deciding that an individual will get the disease, and they actually get the disease.
+  <li> True Negative (Specificity): Deciding an individual will not get the disease, and they actually do not get the disease.
+  <li> False Positive: Deciding an individual has the disease, but they do not have the disease.
+  <li> False Negative: Deciding an individual does not have the disease, but hey actually have the disease.
+</ul>
+
+<p>A confusion matrix essentially fills in counts for the number of data points that fall into each of the above cases.  We would like to build an algorithm that would only classigy points in the true positive and true negative boxes. Unfortunately, as with Type I and Type II errors in hypothesis tests, the less likely you are to make a Type I error, the more likely you are to make a Type II error (and vice versa).</p>
+
+<p>We can also define those terms of precision, recall, and accuracy based on our knowledge of these items.</p>
+<ul>
+  <li> Precision = True Positives/(True Positives + False Positives)
+  <li> Recall = True Positive/(True Positives + False Negatives)
+  <li> Accuracy = Total Correct/(Total Cases to Predict) 
+</ul>
+<!--begin.rcode 
+set.seed(12)
+train_ind = sample(nrow(d), nrow(d)/2)
+train_d = d[train_ind,]
+test_d = d[-train_ind,]
+glm_new_mod = glm(disease~age+sector, 
+              family=binomial(link=logit), data=train_d)
+summary(glm_new_mod)
+end.rcode-->
+
+<p>Now that we have fit our model on the training data, we can see how our model performs on the training and the test data by building a confusion matrix of the results on each, and we might also choose to compute precision, recall, and accuracy. </p>
+
+<p>First, I must obtain the predicted values of our model, which I do for both the test and the training data.  Note the predicted value that is given is a probability that an individual obtains the disease.  We then will need to classify to 'disease' or 'no disease.'  A common approach to classify these is if our probability of disease is greater than 50%, we classify as 'disease,' else 'no disease.'  Although this is a common splitting technique (and I used it below), we could choose another probability to split. </p>
+
+<p>Choosing a higher probability before deciding an individual has the disease would make it less likely to classify any person as having the disease, which means we will make fewer errors where we classify an individual as having the disease when they don't.  Alternatively, we will make more errors where we classify individuals as not having the disease, but they actually have the disease.  Choosing a lower value for p, would mean more errors where we classify an individual as having the disease when they don't.  We would, however, make fewer errors where we classify individuals as not having the disease, but they actually have the disease.</p>
+
+<p>Here, I have used my model to make predictions, and then classified each individual as having the disease or not based on the probability of having the disease being greater than 0.5.  I did this for both the test and training data using the training model.</p>
+
+<!--begin.rcode 
+mod_train_preds = predict(glm_new_mod, train_d, type = "response")
+mod_test_preds = predict(glm_new_mod, test_d, type = "response")
+
+train_pred_disease = rep("No Disease", length(mod_train_preds))
+train_pred_disease[mod_train_preds > 0.5] = "Disease"
+
+test_pred_disease = rep("No Disease", length(mod_test_preds))
+test_pred_disease[mod_test_preds > 0.5] = "Disease"
+end.rcode-->
+
+<p>We can then build our confusion matrix using the <b>table()</b> function.  Here, we have the confusion matrix for the training data</p>
+
+<!--begin.rcode 
+table(train_d$disease, train_pred_disease)
+end.rcode-->
+
+<p>Then, on our test data, we can find the confusion matrix, as well:</p>
+
+<!--begin.rcode 
+table(test_d$disease, test_pred_disease)
+end.rcode-->
+
+<p>We really care about how well our model is doing on the test data.  Note the top is what we predict, where the 0, 1 represents the truth in the data.  We can find the following:</p>
+<ul>
+  <li> Precision = 10/(10 + 15)
+  <li> Recall = 10/(10 + 13)
+  <li> Accuracy = 70/(98) 
+</ul>
+
+<p>We could then see if our model will perform better when considering other predictors, or combination of predictors.  We might also try changing our probability cutoff.</p>
+
+</body>
+</html>

@@ -1,0 +1,363 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Decision Analysis Probability Distributions</title>
+</head>
+
+<b>Probability Distributions</b>
+
+<body>
+
+<p>This document will aim to assure you understand different probability distributions, and there following use cases. In class, we discussed discrete and continuous distributions.  Consider the following situations and suggest a probability distribution that would be suitable to model each situation.  Note that just a slight change in modeling a situation can change the distribution. For each situation below, consider what <b>distribution</b> you would use, what <b>each parameter would represent</b>, and what the random variable <b>X</b> would represent in each case.</p>
+<br></br>
+<ol>
+  <li>Consider we are interested in modeling the number of people we see in the area who wear tie. </li>
+  <ul>
+      <li> Distribution: <b>Poisson</b>
+      <br></br>
+      <br></br>
+      <li> Parameters: <b>Lambda is the only parameter for the Poisson distribution, which is equal to the mean and the variance.</b>
+      <br></br>
+      <br></br>
+      <li> Random Variable: <b>The random variable (X) is the number of people we see wearing ties.  Likely measured daily.  The count would be a new count of the number of individuals wearing a tie, collected for each day.</b>
+      <br></br>
+      <br></br>
+  </ul>
+  <br></br>
+  <li>What if (twisting the above situation) we just looked at the number of people wearing a tie out of the first 100 people that we saw?</li>
+    <ul>
+      <li> Distribution: <b>Binomial Distribution</b>
+      <br></br>
+      <br></br>
+      <li> Parameters: <b> n = 100, p = proportion of individuals wearing a tie out of the 100 people.</b>
+      <br></br>
+      <br></br>
+      <li> Random Variable: <b>The count of the number of individuals wearing a tie.</b>
+      <br></br>
+      <br></br>
+  </ul>
+  <li>What if we wanted to model the number of individuals until we saw our *first* person wearing a tie?  
+    <ul>
+      <li> Distribution: <b>Geometric Distribution</b>
+      <br></br>
+      <br></br>
+      <li> Parameters: <b>p = the probability of any one person wearing a tie.</b>
+      <br></br>
+      <br></br>
+      <li> Random Variable:<b>The number of 'non-tie wearers' until you see your first 'tie wearer'.</b>
+      <br></br>
+      <br></br>
+  </ul>
+    <li> Consider for all of the above situations, the probability of a male individual wearing a tie on a weekday is 35%.  On Saturday, the probability of a male wearing a tie on a Saturday is 1%.  On Sunday, the probability of a male wearing a tie is 15%.  Additionally, assume that the proportion of males to females is 53% to 47%, respectively.  For the purposes of this problem, consider the probability of a female wearing a tie on any given day is the same at .5%.  Additionally assume there are 450,000 people that live in the area.  
+    <br></br>
+    <ul>
+        <li> Based on the above scenario, determine the probability that any individual is wearing a tie.
+<br></br>
+<style>
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+    text-align: left;
+}
+</style>
+<table style="width:100%">
+  <caption>Frequency Table</caption>
+  <tr>
+    <th></th>
+    <th>Weekday</th>
+    <th>Saturday</th>
+    <th>Sunday</th>
+  </tr>
+  <tr>
+    <th>Male</th>
+    <td>0.35</td>
+    <td>0.01</td>
+    <td>0.15</td>
+  </tr>
+  <tr>
+    <th>Female</th>
+    <td>0.005</td>
+    <td>0.005</td>
+    <td>0.005</td>
+  </tr>
+</table>
+<br></br>
+<p>There is also a 0.53 chance that an individual is male, and a 0.47 chance that an individual is female.  Additionally, with no day provided, there is a 5/7 chance that a day is a weekday and 1/7 for the probability of Saturday and Sunday.  Multiplying to acheive the probability of a tie for each possible scenario: male, weekday, tie; male, Sunday, tie; male, Saturday, tie; male, Sunday, tie; or female, tie. We can calculate each of these probabilities as shown below:</p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mwt</span> <span class="hl kwb">=</span> <span class="hl num">.53</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span><span class="hl opt">*</span><span class="hl num">.35</span>
+<span class="hl std">msat</span> <span class="hl kwb">=</span> <span class="hl num">.53</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span><span class="hl opt">*</span><span class="hl num">.01</span>
+<span class="hl std">msut</span> <span class="hl kwb">=</span> <span class="hl num">.53</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span><span class="hl opt">*</span><span class="hl num">.15</span>
+<span class="hl std">ft</span> <span class="hl kwb">=</span> <span class="hl num">.47</span><span class="hl opt">*</span><span class="hl num">.005</span>
+</pre></div>
+</div></div>
+
+This provides the following total probability of wearing a tie:
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mwt</span> <span class="hl opt">+</span> <span class="hl std">msat</span> <span class="hl opt">+</span> <span class="hl std">msut</span> <span class="hl opt">+</span> <span class="hl std">ft</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.1469643
+</pre></div>
+</div></div>
+
+        <li> Calculate the probability of an individual being a male given that they are are not wearing a tie.
+<br></br>
+<p>Notice, the probability of an individual being male given that they are not wearing a tie is equal to the probability of being male and not wearing a tie divided by the probability of not wearing a tie.  We can find the probability of not wearing a tie similarly to the way we found the probability of wearing a tie, which gives:</b>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mwn</span> <span class="hl kwb">=</span> <span class="hl num">.53</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span><span class="hl opt">*</span><span class="hl num">.65</span>
+<span class="hl std">msan</span> <span class="hl kwb">=</span> <span class="hl num">.53</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span><span class="hl opt">*</span><span class="hl num">.99</span>
+<span class="hl std">msun</span> <span class="hl kwb">=</span> <span class="hl num">.53</span><span class="hl opt">*</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span><span class="hl opt">*</span><span class="hl num">.85</span>
+<span class="hl std">fn</span> <span class="hl kwb">=</span> <span class="hl num">.47</span><span class="hl opt">*</span><span class="hl num">.995</span>
+<span class="hl std">mwn</span> <span class="hl opt">+</span> <span class="hl std">msan</span> <span class="hl opt">+</span> <span class="hl std">msun</span> <span class="hl opt">+</span> <span class="hl std">fn</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.8530357
+</pre></div>
+</div></div>
+
+<p>Then the probability of being male and not wearing a tie is just the first three equations above.  This gives us the probability of male given that you are not wearing a tie as:</p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(mwn</span> <span class="hl opt">+</span> <span class="hl std">msan</span> <span class="hl opt">+</span> <span class="hl std">msun)</span><span class="hl opt">/</span><span class="hl std">(mwn</span> <span class="hl opt">+</span> <span class="hl std">msan</span> <span class="hl opt">+</span> <span class="hl std">msun</span> <span class="hl opt">+</span> <span class="hl std">fn)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.4517815
+</pre></div>
+</div></div>
+
+        <li> Now, calculate the expected number of individuals in the community that are wearing ties for each day.
+            <br></br>
+<p>Using the above probabilities, we can determine the probability of a tie for each day.  We need to condition on the day we are on.  So we are finding the probability of tie given a particular day.  </p>
+<ul>
+  <li> Weekday:
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(mwt)</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">ft</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.18785
+</pre></div>
+</div></div>
+  <li> Saturday:
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(msat)</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">ft</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.00765
+</pre></div>
+</div></div>
+  <li> Sunday:
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(msut)</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">ft</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.08185
+</pre></div>
+</div></div>
+</ul>
+
+<p>Then, using the above probabilities, the expected values for each case are:</p>
+<ul>
+  <li> Weekday:
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">((mwt)</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">ft)</span><span class="hl opt">*</span><span class="hl num">450000</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 84532.5
+</pre></div>
+</div></div>
+  <li> Saturday:
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">((msat)</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">ft)</span><span class="hl opt">*</span><span class="hl num">450000</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 3442.5
+</pre></div>
+</div></div>
+  <li> Sunday:
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">((msut)</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">ft)</span><span class="hl opt">*</span><span class="hl num">450000</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 36832.5
+</pre></div>
+</div></div>
+</ul>
+<br></br>
+        <li> Calculate the probability of seeing no one wearing a tie for each day.  What are your assumptions when calculating this probability?
+        <bt></br>
+<p>Since we are calculating this for each day, we can assume we are given which day we are in.  Therefore, this probability can be canceled out.</p>        
+<ul>
+  <li> Weekday:
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(mwn</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.81215
+</pre></div>
+</div></div>
+  <li> Saturday:
+<div class="chunk" id="unnamed-chunk-12"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(msan</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.99235
+</pre></div>
+</div></div>
+  <li> Sunday:
+<div class="chunk" id="unnamed-chunk-13"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">(msun</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.91815
+</pre></div>
+</div></div>
+</ul>
+<br></br>
+<p>We are assuming that each individual that we see is independent of every other individual.  We are assuming that no weekday is any different than any other weekday, similarly idea with Saturday and Sunday.  If more people are more likely to wear ties on Easter Sunday than other Sundays our modeling approach does not account for this fact.</p>
+
+<p>Then we are interested in finding the probability of no one wearing a tie on a particular day.  We can find this probability by using a Binomial distribution with n = 450000 and p of the probability shown for a particular day.</p>
+<br></br>
+  <li> Weekday:
+<div class="chunk" id="unnamed-chunk-14"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">450000</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(mwn</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0
+</pre></div>
+</div></div>
+  <li> Saturday:
+<div class="chunk" id="unnamed-chunk-15"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">450000</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(msan</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0
+</pre></div>
+</div></div>
+  <li> Sunday:
+<div class="chunk" id="unnamed-chunk-16"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">450000</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(msun</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0
+</pre></div>
+</div></div>
+</ul>
+<br></br>
+
+        <li>  If we don't know what day it is, what is the minimum probability of seeing at least 1 person with a tie? What is the maximum probability of seeing at least 1 person with a tie?
+        <br></br>
+<p>Similar to the above, we could calculate the probability of one more people wearing a tie as:</p>
+  <li> Weekday:
+<div class="chunk" id="unnamed-chunk-17"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl num">1</span><span class="hl opt">-</span><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">450000</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(mwn</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 1
+</pre></div>
+</div></div>
+  <li> Saturday:
+<div class="chunk" id="unnamed-chunk-18"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl num">1</span><span class="hl opt">-</span><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">450000</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(msan</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 1
+</pre></div>
+</div></div>
+  <li> Sunday:
+<div class="chunk" id="unnamed-chunk-19"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl num">1</span><span class="hl opt">-</span><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl num">450000</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(msun</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 1
+</pre></div>
+</div></div>
+</ul>
+<br></br>
+<p>It is now trivial to answer both questions posed.  Nevermind...didn't expect for both of those to be 1.  It clearly doesn't matter what day it is.  You expect someone will be wearing a tie somewhere in your town with probability 1.</p>
+<br></br>
+    
+
+        <li> Considering it is a Sunday, how many people do you expect to see before you see your first person wearing a tie?
+        <br></br>
+<p>Here, we are working with a Geometric distribution with p as given for Sunday above.  Therefore, we have the expected value as 1/p or </p>
+
+<div class="chunk" id="unnamed-chunk-20"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl num">1</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(msun</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 12.21747
+</pre></div>
+</div></div>
+
+
+<br></br>
+        <li> If we look at 100 individuals from the community (assume random), what is the probability 15 of these individuals are wearing ties on a Tuesday?
+        <br></br>
+<p>Again here, we are using the Binomial distribution.  Since, Tuesday is a weekday, we will use the probability associated with a weekday to find this probability.  This can be done in the following way:</p>
+
+<div class="chunk" id="unnamed-chunk-21"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">dbinom</span><span class="hl std">(</span><span class="hl num">15</span><span class="hl std">,</span> <span class="hl num">100</span><span class="hl std">, (</span><span class="hl num">1</span><span class="hl opt">-</span><span class="hl std">(mwn</span><span class="hl opt">/</span><span class="hl std">(</span><span class="hl num">5</span><span class="hl opt">/</span><span class="hl num">7</span><span class="hl std">)</span> <span class="hl opt">+</span> <span class="hl std">fn)))</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.06760056
+</pre></div>
+</div></div>
+
+        <br></br>
+        <li> Consider we additionally know that if someone has a tie, they have a 40% chance of stopping at our shop.  However, if they do not have a tie, they have a 5% chance of stopping at our shop.  Assuming every person in the community has a 15% chance of passing by our shop, what is the expected number of people that will stop into our shop?
+        <br></br>
+ <p>Since the total probability of wearing a tie is as shown above (about 15%), we know that 15% of these individuals have a chance of passing by our shop.  Similarly, approximately 85% of individuals are not wearing a tie and 15% of these individuals have a chance of passing by our shop.  We can find the chance that an individual wearing a tie stops at our shop as approximately:</p>
+<br></br>
+<div class="chunk" id="unnamed-chunk-22"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl num">.15</span><span class="hl opt">*</span><span class="hl num">.15</span><span class="hl opt">*</span><span class="hl num">.4</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.009
+</pre></div>
+</div></div>
+<br></br>
+<p>Alternatively, we can find the probability that an individual not wearing a tie stops by our shop as approximately:</p>
+<br></br>
+<div class="chunk" id="unnamed-chunk-23"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl num">.85</span><span class="hl opt">*</span><span class="hl num">.15</span><span class="hl opt">*</span><span class="hl num">.05</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.006375
+</pre></div>
+</div></div>
+<p>Therefore, the total probability is given by the sum, and the expected value is this probability times the number of individuals in the community.</p>
+<br></br>
+<div class="chunk" id="unnamed-chunk-24"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">((</span><span class="hl num">.15</span><span class="hl opt">*</span><span class="hl num">.15</span><span class="hl opt">*</span><span class="hl num">.4</span><span class="hl std">)</span><span class="hl opt">+</span><span class="hl std">(</span><span class="hl num">.85</span><span class="hl opt">*</span><span class="hl num">.15</span><span class="hl opt">*</span><span class="hl num">.05</span><span class="hl std">))</span><span class="hl opt">*</span><span class="hl num">450000</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 6918.75
+</pre></div>
+</div></div>
+
+<p>With no idea about which day it might be, we might expect this number of individuals to stop by our store (given all the the probabilities defined are accurate, and non-varying).</p> 
+        <br></br>
+    </ul>
+</ol>
+

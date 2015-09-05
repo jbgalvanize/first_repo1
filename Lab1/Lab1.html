@@ -1,0 +1,320 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Lab 1</title>
+</head>
+
+<body>
+<u><b>Lab 1</b></u>
+
+<p>The aim of this lab is to understand more about the salaries of individuals employed at the University of Colorado.  The csv file in Canvas provides salary data from all individuals employed across all Univeristy of Colorado (Boulder, Denver, Anschutz, and Colorado Springs) from last year.  We might start by taking a look at some basic characteristics of this dataset.</p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">data</span> <span class="hl kwb">=</span> <span class="hl kwd">read.csv</span><span class="hl std">(</span><span class="hl str">'/Users/joshuabernhard/Documents/R Labs/Lab1/SalaryAnalysis.csv'</span><span class="hl std">)</span>
+<span class="hl kwd">head</span><span class="hl std">(data)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##     CAMPUS EMPLOYEE.ID       JOB.FAMILY                JOB.TITLE
+## 1 ANSCHUTZ      116301 CLASSIFIED STAFF ELECTRONICS SPECIALIST I
+## 2 ANSCHUTZ      166459 CLASSIFIED STAFF      PIPE/MECH TRADES II
+## 3 ANSCHUTZ      199514 CLASSIFIED STAFF      PIPE/MECH TRADES II
+## 4 ANSCHUTZ      240971 CLASSIFIED STAFF      PIPE/MECH TRADES II
+## 5 ANSCHUTZ      118023 CLASSIFIED STAFF     PIPE/MECH TRADES III
+## 6 ANSCHUTZ      106049 CLASSIFIED STAFF       PROJECT PLANNER II
+##                   DEPARTMENT JOB.FULL.TIME.PCNT STATE.FUNDING
+## 1 ADM AVCFM CONST SVCS ADMIN                100         56306
+## 2 ADM AVCFM CONST SVCS ADMIN                100             0
+## 3 ADM AVCFM CONST SVCS ADMIN                100             0
+## 4 ADM AVCFM CONST SVCS ADMIN                100             0
+## 5 ADM AVCFM CONST SVCS ADMIN                100             0
+## 6 ADM AVCFM CONST SVCS ADMIN                100             0
+##   NON.STATE.FUNDING TOTAL.FUNDING
+## 1                 0         56306
+## 2             54903         54903
+## 3             54903         54903
+## 4             52516         52516
+## 5             71231         71231
+## 6             63755         63755
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">tail</span><span class="hl std">(data)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##          CAMPUS EMPLOYEE.ID                         JOB.FAMILY
+## 18480 UCD ADMIN      247224 OFFICERS AND EXEMPT PROFESSIONALS 
+## 18481 UCD ADMIN      241447 OFFICERS AND EXEMPT PROFESSIONALS 
+## 18482 UCD ADMIN      105391 OFFICERS AND EXEMPT PROFESSIONALS 
+## 18483 UCD ADMIN      138584 OFFICERS AND EXEMPT PROFESSIONALS 
+## 18484 UCD ADMIN      215478 OFFICERS AND EXEMPT PROFESSIONALS 
+## 18485 UCD ADMIN      269125 OFFICERS AND EXEMPT PROFESSIONALS 
+##                            JOB.TITLE            DEPARTMENT
+## 18480 ENGINEERING/ARC PRINCIPAL PROF VCUI PLANNING OFFICER
+## 18481      ENGINEERING/ARCH DIRECTOR VCUI PLANNING OFFICER
+## 18482      ENGINEERING/ARCH PRGM DIR VCUI PLANNING OFFICER
+## 18483   ENGINEERING/ARCH PROGRAM MGR VCUI PLANNING OFFICER
+## 18484   ENGINEERING/ARCH SENIOR PROF VCUI PLANNING OFFICER
+## 18485   ENGINEERING/ARCH SENIOR PROF VCUI PLANNING OFFICER
+##       JOB.FULL.TIME.PCNT STATE.FUNDING NON.STATE.FUNDING TOTAL.FUNDING
+## 18480                100         96247                 0         96247
+## 18481                100        150972                 0        150972
+## 18482                100         97845                 0         97845
+## 18483                100         84824                 0         84824
+## 18484                100         63036                 0         63036
+## 18485                100         90000                 0         90000
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">str</span><span class="hl std">(data)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 'data.frame':	18485 obs. of  9 variables:
+##  $ CAMPUS            : Factor w/ 6 levels &quot;ANSCHUTZ&quot;,&quot;BOULDER&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ EMPLOYEE.ID       : int  116301 166459 199514 240971 118023 106049 179031 199772 201439 206516 ...
+##  $ JOB.FAMILY        : Factor w/ 8 levels &quot;CLASSIFIED STAFF&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ JOB.TITLE         : Factor w/ 438 levels &quot;ACADEMIC SERVICES ASSOC DIR&quot;,..: 140 324 324 324 325 353 403 403 403 403 ...
+##  $ DEPARTMENT        : Factor w/ 613 levels &quot;A&amp;S DN-ASST,ADMINISTRATION&quot;,..: 31 31 31 31 31 31 31 31 31 31 ...
+##  $ JOB.FULL.TIME.PCNT: num  100 100 100 100 100 100 100 100 100 100 ...
+##  $ STATE.FUNDING     : int  56306 0 0 0 0 0 0 0 0 0 ...
+##  $ NON.STATE.FUNDING : int  0 54903 54903 52516 71231 63755 46601 43682 41802 41307 ...
+##  $ TOTAL.FUNDING     : int  56306 54903 54903 52516 71231 63755 46601 43682 41802 41307 ...
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">dim</span><span class="hl std">(data)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 18485     9
+</pre></div>
+</div></div>
+
+<p>We can see there are 9 variables in the dataset.  There were 18,485 individuals employed when the data were collected (last year).  We can see there are three types of variables in the datset: Factor (categorical), int (integer), and num (numeric, continuous)</p>
+
+<p>We might try to understand basic information regarding each of the variables.  Note the attach function will attach your dataset, so you do not need to specify using '$' which variable you are interested in; rather, you can simply ask for specific columns without having to specify the dataset.  For factors, we will use the <b>table()</b> command to take a look at summary of the data.  If we devide by the length, we can get our results as percentages.  For numeric or integer data, we use the <b>summary()</b> command to better understand the values that are present.</p>
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">attach</span><span class="hl std">(data)</span>
+<span class="hl kwd">table</span><span class="hl std">(CAMPUS)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## CAMPUS
+##  ANSCHUTZ   BOULDER    DENVER    SYSTEM      UCCS UCD ADMIN 
+##      6303      8137      1595       435      1373       642
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(CAMPUS)</span><span class="hl opt">/</span><span class="hl kwd">length</span><span class="hl std">(CAMPUS)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## CAMPUS
+##   ANSCHUTZ    BOULDER     DENVER     SYSTEM       UCCS  UCD ADMIN 
+## 0.34097917 0.44019475 0.08628618 0.02353259 0.07427644 0.03473086
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(JOB.FAMILY)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## JOB.FAMILY
+##                   CLASSIFIED STAFF                  CLASSIFIED STAFF  
+##                               3158                                 20 
+##                   CLINICAL FACULTY OFFICERS AND EXEMPT PROFESSIONALS  
+##                                404                               4275 
+##                      OTHER FACULTY                    REGULAR FACULTY 
+##                               2097                               3676 
+##                   REGULAR FACULTY                    RESEARCH FACULTY 
+##                               1535                               3320
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl com">#table(JOB.TITLE) #Not running these because of the many levels</span>
+<span class="hl com">#table(DEPARTMENT) #Not running these because of the many levels</span>
+<span class="hl kwd">summary</span><span class="hl std">(JOB.FULL.TIME.PCNT)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    0.00  100.00  100.00   85.13  100.00  100.00
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(STATE.FUNDING)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0       0     828   28930   51910  630200
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(NON.STATE.FUNDING)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##       0       0   21630   42650   59080 1124000       2
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(TOTAL.FUNDING)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0   37020   55430   71580   86560 1124000
+</pre></div>
+</div></div>
+
+<p>We might choose to look at subsets of our columns.  For example, we might only care about the summary of the data where the state funding or non-state funding is non-zero.  We could look at this information by using the commands below.  The square brackets tell us to only look at the state funding where (this is the square brackets) the state funding is positive. This is done similarly for the non-state funding.</p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(STATE.FUNDING[STATE.FUNDING</span><span class="hl opt">&gt;</span><span class="hl num">0</span><span class="hl std">])</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      10   29910   51740   57640   77250  630200
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(NON.STATE.FUNDING[NON.STATE.FUNDING</span><span class="hl opt">&gt;</span><span class="hl num">0</span><span class="hl std">])</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##      25   34000   52090   73810   87500 1124000       2
+</pre></div>
+</div></div>
+
+<p>We can subset our column based on the characteristics of other columns as well.  For example, the code below provides the total funding for individuals with the job title of instructor.  We might want to choose the total funding based on job categories, campus, or a number of other factors.</p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(TOTAL.FUNDING[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;INSTRUCTOR&quot;</span><span class="hl std">])</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      75   45000   65000   73520   93280  258800
+</pre></div>
+</div></div>
+<p>We could try some additional ways of subsetting.  Note that if you want an entire data frame back, you will need to use the <b>subset()</b> command.  Square brackets are only used when you want to subset a 'vector' or a single column.</p>
+
+<ol>
+<li>We could want to return a new data frame called <b>profs</b> that is only professors.</li>
+
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">profs</span> <span class="hl kwb">=</span> <span class="hl kwd">subset</span><span class="hl std">(data, JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<li>We could want only professors with full time employment.</li>
+
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">fullprofs</span> <span class="hl kwb">=</span> <span class="hl kwd">subset</span><span class="hl std">(data, JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span> <span class="hl opt">&amp;</span> <span class="hl std">JOB.FULL.TIME.PCNT</span> <span class="hl opt">==</span> <span class="hl num">100</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<li>We could want only professors with full time employment.</li>
+
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">fullprofs</span> <span class="hl kwb">=</span> <span class="hl kwd">subset</span><span class="hl std">(data, JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span> <span class="hl opt">&amp;</span> <span class="hl std">JOB.FULL.TIME.PCNT</span> <span class="hl opt">==</span> <span class="hl num">100</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<li>We could ask questions like: given that an individual works on the Denver campus, what is the probability that the individual is full time and earns more than 100k each in full funding.  You are using Bayes' rule to find this probability. The <b>length()</b> command tells us how many elements are in our vector.</li>
+
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">length</span><span class="hl std">(TOTAL.FUNDING[CAMPUS</span> <span class="hl opt">==</span> <span class="hl str">&quot;DENVER&quot;</span> <span class="hl opt">&amp;</span> <span class="hl std">JOB.FULL.TIME.PCNT</span> <span class="hl opt">==</span> <span class="hl num">100</span> <span class="hl opt">&amp;</span>
+                       <span class="hl std">TOTAL.FUNDING</span> <span class="hl opt">&gt;</span><span class="hl num">100000</span><span class="hl std">])</span><span class="hl opt">/</span><span class="hl kwd">length</span><span class="hl std">(TOTAL.FUNDING[CAMPUS</span> <span class="hl opt">==</span> <span class="hl str">&quot;DENVER&quot;</span><span class="hl std">])</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.09090909
+</pre></div>
+</div></div>
+
+<li>If wanted individuals who are at Denver or Boulder (not just Denver), but still met the above criteria, we can find this using the following command:</li>
+
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">length</span><span class="hl std">(TOTAL.FUNDING[(CAMPUS</span> <span class="hl opt">==</span> <span class="hl str">&quot;DENVER&quot;</span> <span class="hl opt">|</span> <span class="hl std">CAMPUS</span> <span class="hl opt">==</span> <span class="hl str">&quot;BOULDER&quot;</span><span class="hl std">)</span> <span class="hl opt">&amp;</span>
+                       <span class="hl std">JOB.FULL.TIME.PCNT</span> <span class="hl opt">==</span> <span class="hl num">100</span> <span class="hl opt">&amp;</span> <span class="hl std">TOTAL.FUNDING</span> <span class="hl opt">&gt;</span><span class="hl num">100000</span><span class="hl std">])</span><span class="hl opt">/</span>
+                      <span class="hl kwd">length</span><span class="hl std">(TOTAL.FUNDING[CAMPUS</span> <span class="hl opt">==</span> <span class="hl str">&quot;DENVER&quot;</span> <span class="hl opt">|</span> <span class="hl std">CAMPUS</span> <span class="hl opt">==</span> <span class="hl str">&quot;BOULDER&quot;</span><span class="hl std">])</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.1095356
+</pre></div>
+</div></div>
+
+</ol>
+
+<p>We could ask many other questions similar to those asked above, but for now, we might move on to using ggplot2 to create visual displays of our data.</p>
+
+<p>We might want to look at a plot of the data.  If our data is quantitative, the most common plot that is used is a histogram, which we can produce using <b>hist()</b> in the base package.  We might also install <b>ggplot2</b> and use the <b>qplot()</b> function.</p>
+
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">hist</span><span class="hl std">(TOTAL.FUNDING[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span><span class="hl std">],</span> <span class="hl kwc">breaks</span><span class="hl std">=</span><span class="hl num">100</span><span class="hl std">,</span> <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;Total Funding&quot;</span><span class="hl std">,</span>
+     <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Professor Total Funding&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-10-1.png" title="plot of chunk unnamed-chunk-10" alt="plot of chunk unnamed-chunk-10" class="plot" /></div></div>
+
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(ggplot2)</span>
+<span class="hl kwd">qplot</span><span class="hl std">(TOTAL.FUNDING[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span><span class="hl std">],</span> <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;Total Funding&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Professor Total Funding&quot;</span><span class="hl std">)</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-11-1.png" title="plot of chunk unnamed-chunk-11" alt="plot of chunk unnamed-chunk-11" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl kwd">qplot</span><span class="hl std">(TOTAL.FUNDING[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span><span class="hl std">],</span> <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;Total Funding&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Professor Total Funding&quot;</span><span class="hl std">,</span> <span class="hl kwc">fill</span> <span class="hl std">= CAMPUS[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span><span class="hl std">])</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-11-2.png" title="plot of chunk unnamed-chunk-11" alt="plot of chunk unnamed-chunk-11" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl kwd">qplot</span><span class="hl std">(TOTAL.FUNDING[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;SENIOR INSTRUCTOR&quot;</span><span class="hl std">],</span> <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;Total Funding&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Senior Instructor Total Funding&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">fill</span> <span class="hl std">= CAMPUS[JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;SENIOR INSTRUCTOR&quot;</span><span class="hl std">])</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-11-3.png" title="plot of chunk unnamed-chunk-11" alt="plot of chunk unnamed-chunk-11" class="plot" /></div></div>
+
+<p>We might subset our data before we plot some of the information.  </p>
+
+<div class="chunk" id="unnamed-chunk-12"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#levels(JOB.TITLE) Provides all the levels of a categorical variable</span>
+<span class="hl std">newdata</span> <span class="hl kwb">=</span> <span class="hl kwd">subset</span><span class="hl std">(data, JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;INSTRUCTOR&quot;</span> <span class="hl opt">|</span> <span class="hl std">JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;SENIOR INSTRUCTOR&quot;</span> <span class="hl opt">|</span>
+                   <span class="hl std">JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;PROFESSOR&quot;</span> <span class="hl opt">|</span> <span class="hl std">JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;ASSISTANT PROFESSOR&quot;</span> <span class="hl opt">|</span>
+                   <span class="hl std">JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;ASSOCIATE PROFESSOR&quot;</span> <span class="hl opt">|</span> <span class="hl std">JOB.TITLE</span> <span class="hl opt">==</span> <span class="hl str">&quot;VISITING ASST 
+                   PROFESSOR&quot;</span><span class="hl std">)</span>
+
+<span class="hl kwd">qplot</span><span class="hl std">(TOTAL.FUNDING,</span> <span class="hl kwc">data</span> <span class="hl std">= newdata,</span> <span class="hl kwc">fill</span> <span class="hl std">= JOB.TITLE,</span> <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Total Funding&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;Total.Funding&quot;</span><span class="hl std">)</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-12-1.png" title="plot of chunk unnamed-chunk-12" alt="plot of chunk unnamed-chunk-12" class="plot" /></div></div>
+
+<p>Given the ambiguity of determining salaries based on the plot, we might just look at summary statistics for each group.  Moving forward to look at bivariate information.  There isn't a ton to work with in this dataset regarding comparing quantitative data, but we might compare state funding to total funding to simply illustrate a plot you could make with quantitative data.</p>
+
+<div class="chunk" id="unnamed-chunk-13"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">qplot</span><span class="hl std">(STATE.FUNDING, TOTAL.FUNDING,</span> <span class="hl kwc">data</span> <span class="hl std">= newdata,</span> <span class="hl kwc">col</span> <span class="hl std">= JOB.TITLE,</span>
+      <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Total Funding by State Funding&quot;</span><span class="hl std">,</span> <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;State Funding&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">ylab</span><span class="hl std">=</span><span class="hl str">'Total Funding'</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-13-1.png" title="plot of chunk unnamed-chunk-13" alt="plot of chunk unnamed-chunk-13" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl kwd">qplot</span><span class="hl std">(JOB.TITLE, TOTAL.FUNDING,</span> <span class="hl kwc">data</span> <span class="hl std">= newdata,</span> <span class="hl kwc">geom</span> <span class="hl std">=</span> <span class="hl str">&quot;boxplot&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">main</span> <span class="hl std">=</span> <span class="hl str">&quot;Total Funding by Title&quot;</span><span class="hl std">,</span> <span class="hl kwc">xlab</span><span class="hl std">=</span><span class="hl str">&quot;Job Title&quot;</span><span class="hl std">,</span>
+      <span class="hl kwc">ylab</span><span class="hl std">=</span><span class="hl str">'Total Funding'</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-13-2.png" title="plot of chunk unnamed-chunk-13" alt="plot of chunk unnamed-chunk-13" class="plot" /></div></div>
+
+<p>Other useful functions that I use frequently that are not shown here are <b>by()</b>, <b>apply()</b>, and <b>grep()</b>.  You can see examples of these functions <a href="http://davetang.org/muse/2013/05/22/using-aggregate-and-apply-in-r/">here</a> and <a href="https://www.youtube.com/watch?v=5XchfRwd914">here</a>.  The by and apply commands perform aggregate functions on a group that has a similar charcteristic.  I might use these functions if I wanted the average total funding for each job title or for each campus.  The grep command is similar to a vlookup in excel.</p>
+
+</body>
+</html>
