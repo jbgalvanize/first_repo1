@@ -1,0 +1,92 @@
+<html>
+
+<head>
+<title>Item Based Collaborative Filtering</title>
+</head>
+
+<body>
+<b>Item Based Collaborative Filtering</b>
+<br></br>
+<p>Collaborative filtering is a common technique used to make recommendations.  There are two common techniques for collaborative filtering:</p>
+
+<ul>
+  <li> Item-based
+  <li> User-based
+</ul>
+
+<p>We will be using the dataset that can be found in Canvas called <b>cfdata.csv</b> to complete this lab. The difference between MBA and CF is that in CF we often want to provide a rating for a particular user-item combination.  In MBA, we provide an item for a particular user (but we do not provide a rating).  CF can be done to make predictions the same way as MBA, but also can do more (as these methods also predict ratings in many cases).  Both item-based and user-based collaborative filtering methods are discussed in the lecture notes.  We will be following the example that can be found <a href="http://www.salemmarafi.com/code/collaborative-filtering-r/">here</a>.  Both methods are shown in this example; however, I will simply be implementing the item-based method.</p>
+
+<p>Here, we are loading the dataset.  There are 286 artists that are considered across 1257 users.  A 1 in the dataset suggests that an individual listens to a particular band, and a 0 suggests that an individual does not listen to a particular band.  You can see a longer description using the above link.  I have also provided a list of the first 10 bands using the <b>names()</b> function.</p>
+
+<!--begin.rcode
+data.germany = read.csv('/Users/joshuabernhard/Documents/R_Labs/ItemCF/cfdata.csv') 
+dim(data.germany) 
+names(data.germany)[1:10]
+end.rcode-->
+
+<p>We can get an idea about individual artists by looking at <b>mean()</b> and <b>sd()</b> for any column.  We can see the proportion of individuals in the dataset that listen to a particular band.</p>
+
+<!--begin.rcode
+mean(data.germany[,3]) #listening to acdc
+mean(data.germany[,283]) #Listening to u2
+end.rcode-->
+
+<p>We can calculate the item-based similarity using the following function:</p>
+
+<!--begin.rcode
+getCosine = function(x,y) 
+{
+  this.cosine = sum(x*y) / (sqrt(sum(x*x)) * sqrt(sum(y*y)))
+  return(this.cosine)
+}
+end.rcode-->
+
+<p>Because we are looking at item-based collaborative filtering, we will remove the user column.  The below is a fairly elaborate way to remove the user column.  We then create a matrix of NAs, which will hold the item similarities (which are just pairwise correlations, also called cosine-similarities). </p>
+
+<!--begin.rcode
+data.germany.ibs = data.germany[,!(names(data.germany) %in% c("user"))]
+
+holder <- matrix(NA, nrow=ncol(data.germany.ibs),ncol=ncol(data.germany.ibs),dimnames=list(colnames(data.germany.ibs),colnames(data.germany.ibs)))
+data.germany.ibs.similarity <- as.data.frame(holder)
+head(data.germany.ibs.similarity)[1:6,1:5]
+dim(data.germany.ibs.similarity) 
+end.rcode-->
+
+<p>Here, we are filling in the matrix with the correlations between artists, which we might write to a .csv file.  We could then build pivot tables, and sort the similarities based on individual questions of interest.  I have commented out this line, but you may write the .csv.</p>
+
+<!--begin.rcode
+for(i in 1:ncol(data.germany.ibs)) {
+  for(j in 1:ncol(data.germany.ibs)) {
+    data.germany.ibs.similarity[i,j]= getCosine(data.germany.ibs[i],data.germany.ibs[j])
+  }
+}
+head(data.germany.ibs.similarity)[1:6,1:5]
+
+#write.csv(data.germany.ibs.similarity,file="final-germany-similarity.csv")
+end.rcode-->
+
+<p>Now, we will build a second matrix that holds the top 10 most correlated artists with each other artist.  First, I build an empty matrix with the number of rows for each artist, and the number of columns 11 (1 for the artist itself, and 10 for the top ten artists correlated to each artist.  We can look at each step of the loop by setting i=1, and then running through the loop.</p>
+
+<!--begin.rcode
+data.germany.neighbours <- matrix(NA, nrow=ncol(data.germany.ibs.similarity),ncol=11,dimnames=list(colnames(data.germany.ibs.similarity)))
+
+for(i in 1:ncol(data.germany.ibs)) {
+    data.germany.neighbours[i,] <- 
+      (t(head(n=11,rownames(data.germany.ibs.similarity[order(data.germany.ibs.similarity[,i],decreasing=TRUE),][i]))))
+}
+
+# Output neighbour results to a file  
+#write.csv(file="final-germany-item-neighbours.csv",x=data.germany.neighbours[,-1])
+end.rcode-->
+
+<p>We could then write our matrix as a .csv file to take a closer look.  A quick look of the matrix we made is shown below.
+
+<!--begin.rcode
+head(data.germany.neighbours[,1:5])
+end.rcode-->
+
+
+For information on how to complete the user-based method see the website listed at the top of this document.  Note, you can do the same analysis in <a href="http://www.salemmarafi.com/code/collaborative-filtering-with-python/">Python</a>. </p>
+
+</body>
+</html>

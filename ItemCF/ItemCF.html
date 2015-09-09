@@ -1,0 +1,208 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Item Based Collaborative Filtering</title>
+</head>
+
+<body>
+<b>Item Based Collaborative Filtering</b>
+<br></br>
+<p>Collaborative filtering is a common technique used to make recommendations.  There are two common techniques for collaborative filtering:</p>
+
+<ul>
+  <li> Item-based
+  <li> User-based
+</ul>
+
+<p>We will be using the dataset that can be found in Canvas called <b>cfdata.csv</b> to complete this lab. The difference between MBA and CF is that in CF we often want to provide a rating for a particular user-item combination.  In MBA, we provide an item for a particular user (but we do not provide a rating).  CF can be done to make predictions the same way as MBA, but also can do more (as these methods also predict ratings in many cases).  Both item-based and user-based collaborative filtering methods are discussed in the lecture notes.  We will be following the example that can be found <a href="http://www.salemmarafi.com/code/collaborative-filtering-r/">here</a>.  Both methods are shown in this example; however, I will simply be implementing the item-based method.</p>
+
+<p>Here, we are loading the dataset.  There are 286 artists that are considered across 1257 users.  A 1 in the dataset suggests that an individual listens to a particular band, and a 0 suggests that an individual does not listen to a particular band.  You can see a longer description using the above link.  I have also provided a list of the first 10 bands using the <b>names()</b> function.</p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">data.germany</span> <span class="hl kwb">=</span> <span class="hl kwd">read.csv</span><span class="hl std">(</span><span class="hl str">'/Users/joshuabernhard/Documents/R_Labs/ItemCF/cfdata.csv'</span><span class="hl std">)</span>
+<span class="hl kwd">dim</span><span class="hl std">(data.germany)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 1257  286
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">names</span><span class="hl std">(data.germany)[</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">10</span><span class="hl std">]</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##  [1] &quot;user&quot;              &quot;a.perfect.circle&quot;  &quot;abba&quot;             
+##  [4] &quot;ac.dc&quot;             &quot;adam.green&quot;        &quot;aerosmith&quot;        
+##  [7] &quot;afi&quot;               &quot;air&quot;               &quot;alanis.morissette&quot;
+## [10] &quot;alexisonfire&quot;
+</pre></div>
+</div></div>
+
+<p>We can get an idea about individual artists by looking at <b>mean()</b> and <b>sd()</b> for any column.  We can see the proportion of individuals in the dataset that listen to a particular band.</p>
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">mean</span><span class="hl std">(data.germany[,</span><span class="hl num">3</span><span class="hl std">])</span> <span class="hl com">#listening to acdc</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.02943516
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">mean</span><span class="hl std">(data.germany[,</span><span class="hl num">283</span><span class="hl std">])</span> <span class="hl com">#Listening to u2</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.03818616
+</pre></div>
+</div></div>
+
+<p>We can calculate the item-based similarity using the following function:</p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">getCosine</span> <span class="hl kwb">=</span> <span class="hl kwa">function</span><span class="hl std">(</span><span class="hl kwc">x</span><span class="hl std">,</span><span class="hl kwc">y</span><span class="hl std">)</span>
+<span class="hl std">{</span>
+  <span class="hl std">this.cosine</span> <span class="hl kwb">=</span> <span class="hl kwd">sum</span><span class="hl std">(x</span><span class="hl opt">*</span><span class="hl std">y)</span> <span class="hl opt">/</span> <span class="hl std">(</span><span class="hl kwd">sqrt</span><span class="hl std">(</span><span class="hl kwd">sum</span><span class="hl std">(x</span><span class="hl opt">*</span><span class="hl std">x))</span> <span class="hl opt">*</span> <span class="hl kwd">sqrt</span><span class="hl std">(</span><span class="hl kwd">sum</span><span class="hl std">(y</span><span class="hl opt">*</span><span class="hl std">y)))</span>
+  <span class="hl kwd">return</span><span class="hl std">(this.cosine)</span>
+<span class="hl std">}</span>
+</pre></div>
+</div></div>
+
+<p>Because we are looking at item-based collaborative filtering, we will remove the user column.  The below is a fairly elaborate way to remove the user column.  We then create a matrix of NAs, which will hold the item similarities (which are just pairwise correlations, also called cosine-similarities). </p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">data.germany.ibs</span> <span class="hl kwb">=</span> <span class="hl std">data.germany[,</span><span class="hl opt">!</span><span class="hl std">(</span><span class="hl kwd">names</span><span class="hl std">(data.germany)</span> <span class="hl opt">%in%</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;user&quot;</span><span class="hl std">))]</span>
+
+<span class="hl std">holder</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">matrix</span><span class="hl std">(</span><span class="hl num">NA</span><span class="hl std">,</span> <span class="hl kwc">nrow</span><span class="hl std">=</span><span class="hl kwd">ncol</span><span class="hl std">(data.germany.ibs),</span><span class="hl kwc">ncol</span><span class="hl std">=</span><span class="hl kwd">ncol</span><span class="hl std">(data.germany.ibs),</span><span class="hl kwc">dimnames</span><span class="hl std">=</span><span class="hl kwd">list</span><span class="hl std">(</span><span class="hl kwd">colnames</span><span class="hl std">(data.germany.ibs),</span><span class="hl kwd">colnames</span><span class="hl std">(data.germany.ibs)))</span>
+<span class="hl std">data.germany.ibs.similarity</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">as.data.frame</span><span class="hl std">(holder)</span>
+<span class="hl kwd">head</span><span class="hl std">(data.germany.ibs.similarity)[</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">6</span><span class="hl std">,</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">5</span><span class="hl std">]</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##                  a.perfect.circle abba ac.dc adam.green aerosmith
+## a.perfect.circle               NA   NA    NA         NA        NA
+## abba                           NA   NA    NA         NA        NA
+## ac.dc                          NA   NA    NA         NA        NA
+## adam.green                     NA   NA    NA         NA        NA
+## aerosmith                      NA   NA    NA         NA        NA
+## afi                            NA   NA    NA         NA        NA
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">dim</span><span class="hl std">(data.germany.ibs.similarity)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 285 285
+</pre></div>
+</div></div>
+
+<p>Here, we are filling in the matrix with the correlations between artists, which we might write to a .csv file.  We could then build pivot tables, and sort the similarities based on individual questions of interest.  I have commented out this line, but you may write the .csv.</p>
+
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwa">for</span><span class="hl std">(i</span> <span class="hl kwa">in</span> <span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">ncol</span><span class="hl std">(data.germany.ibs)) {</span>
+  <span class="hl kwa">for</span><span class="hl std">(j</span> <span class="hl kwa">in</span> <span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">ncol</span><span class="hl std">(data.germany.ibs)) {</span>
+    <span class="hl std">data.germany.ibs.similarity[i,j]</span><span class="hl kwb">=</span> <span class="hl kwd">getCosine</span><span class="hl std">(data.germany.ibs[i],data.germany.ibs[j])</span>
+  <span class="hl std">}</span>
+<span class="hl std">}</span>
+<span class="hl kwd">head</span><span class="hl std">(data.germany.ibs.similarity)[</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">6</span><span class="hl std">,</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">5</span><span class="hl std">]</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##                  a.perfect.circle       abba      ac.dc adam.green
+## a.perfect.circle       1.00000000 0.00000000 0.01791723 0.05155393
+## abba                   0.00000000 1.00000000 0.05227877 0.02507061
+## ac.dc                  0.01791723 0.05227877 1.00000000 0.11315371
+## adam.green             0.05155393 0.02507061 0.11315371 1.00000000
+## aerosmith              0.06277648 0.06105625 0.17715300 0.05663655
+## afi                    0.00000000 0.00000000 0.06789420 0.00000000
+##                   aerosmith
+## a.perfect.circle 0.06277648
+## abba             0.06105625
+## ac.dc            0.17715300
+## adam.green       0.05663655
+## aerosmith        1.00000000
+## afi              0.00000000
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl com">#write.csv(data.germany.ibs.similarity,file=&quot;final-germany-similarity.csv&quot;)</span>
+</pre></div>
+</div></div>
+
+<p>Now, we will build a second matrix that holds the top 10 most correlated artists with each other artist.  First, I build an empty matrix with the number of rows for each artist, and the number of columns 11 (1 for the artist itself, and 10 for the top ten artists correlated to each artist.  We can look at each step of the loop by setting i=1, and then running through the loop.</p>
+
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">data.germany.neighbours</span> <span class="hl kwb">&lt;-</span> <span class="hl kwd">matrix</span><span class="hl std">(</span><span class="hl num">NA</span><span class="hl std">,</span> <span class="hl kwc">nrow</span><span class="hl std">=</span><span class="hl kwd">ncol</span><span class="hl std">(data.germany.ibs.similarity),</span><span class="hl kwc">ncol</span><span class="hl std">=</span><span class="hl num">11</span><span class="hl std">,</span><span class="hl kwc">dimnames</span><span class="hl std">=</span><span class="hl kwd">list</span><span class="hl std">(</span><span class="hl kwd">colnames</span><span class="hl std">(data.germany.ibs.similarity)))</span>
+
+<span class="hl kwa">for</span><span class="hl std">(i</span> <span class="hl kwa">in</span> <span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">ncol</span><span class="hl std">(data.germany.ibs)) {</span>
+    <span class="hl std">data.germany.neighbours[i,]</span> <span class="hl kwb">&lt;-</span>
+      <span class="hl std">(</span><span class="hl kwd">t</span><span class="hl std">(</span><span class="hl kwd">head</span><span class="hl std">(</span><span class="hl kwc">n</span><span class="hl std">=</span><span class="hl num">11</span><span class="hl std">,</span><span class="hl kwd">rownames</span><span class="hl std">(data.germany.ibs.similarity[</span><span class="hl kwd">order</span><span class="hl std">(data.germany.ibs.similarity[,i],</span><span class="hl kwc">decreasing</span><span class="hl std">=</span><span class="hl num">TRUE</span><span class="hl std">),][i]))))</span>
+<span class="hl std">}</span>
+
+<span class="hl com"># Output neighbour results to a file  </span>
+<span class="hl com">#write.csv(file=&quot;final-germany-item-neighbours.csv&quot;,x=data.germany.neighbours[,-1])</span>
+</pre></div>
+</div></div>
+
+<p>We could then write our matrix as a .csv file to take a closer look.  A quick look of the matrix we made is shown below.
+
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">head</span><span class="hl std">(data.germany.neighbours[,</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl num">5</span><span class="hl std">])</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##                  [,1]               [,2]                   
+## a.perfect.circle &quot;a.perfect.circle&quot; &quot;tool&quot;                 
+## abba             &quot;abba&quot;             &quot;madonna&quot;              
+## ac.dc            &quot;ac.dc&quot;            &quot;red.hot.chili.peppers&quot;
+## adam.green       &quot;adam.green&quot;       &quot;the.libertines&quot;       
+## aerosmith        &quot;aerosmith&quot;        &quot;u2&quot;                   
+## afi              &quot;afi&quot;              &quot;funeral.for.a.friend&quot; 
+##                  [,3]              [,4]            [,5]             
+## a.perfect.circle &quot;dredg&quot;           &quot;deftones&quot;      &quot;porcupine.tree&quot; 
+## abba             &quot;robbie.williams&quot; &quot;elvis.presley&quot; &quot;michael.jackson&quot;
+## ac.dc            &quot;metallica&quot;       &quot;iron.maiden&quot;   &quot;the.offspring&quot;  
+## adam.green       &quot;the.strokes&quot;     &quot;babyshambles&quot;  &quot;radiohead&quot;      
+## aerosmith        &quot;led.zeppelin&quot;    &quot;metallica&quot;     &quot;ac.dc&quot;          
+## afi              &quot;rise.against&quot;    &quot;fall.out.boy&quot;  &quot;anti.flag&quot;
+</pre></div>
+</div></div>
+
+
+For information on how to complete the user-based method see the website listed at the top of this document.  Note, you can do the same analysis in <a href="http://www.salemmarafi.com/code/collaborative-filtering-with-python/">Python</a>. </p>
+
+</body>
+</html>
