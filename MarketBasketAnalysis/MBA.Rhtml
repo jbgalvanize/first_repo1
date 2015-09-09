@@ -1,0 +1,104 @@
+<html>
+
+<head>
+<title>Market Basket Analysis</title>
+</head>
+
+<body>
+
+<b>Market Basket Analysis</b>
+<br></br>
+
+<p>There are a number of resources to get a basic understanding of market basket analysis, which is also known as association rules or affinity analysis:</p>
+
+<ul>
+  <li> <a https://en.wikipedia.org/wiki/Lift_(data_mining)>Link 1</a>
+  <li> <a http://www.salemmarafi.com/code/market-basket-analysis-with-r/comment-page-1/>Link 2</a>
+  <li> <a http://www.r-bloggers.com/data-frames-and-transactions/>Link 3</a>
+</ul>
+
+<p>In general, both market basket analysis and collaborative filtering are used to understand items that are associated with one another.  These methods might be used to recommend a movie, book, store item, significant other, etc.  In order to do this in R, we will be using the following libraries.</p>
+
+<!--begin.rcode
+library(Matrix)
+library(grid)
+library(arules)
+library(arulesViz)
+library(datasets)
+end.rcode-->
+
+<p>We will be using the <b>Groceries</b> dataset, which is in a format that is common for transactions taken at a checkout (apparently).  I commented out the <b>inspect()</b> command as this prints a lot of information (all of the items)!  We can get better idea of how this data looks using the following commands:</p>
+
+<!--begin.rcode
+data(Groceries) 
+str(Groceries)
+?Groceries
+#inspect(Groceries)
+#itemFrequencyPlot(Groceries, topN=20,  type='absolute') #total count
+itemFrequencyPlot(Groceries, topN=20) #relative percentage
+end.rcode-->
+
+<p>When we compare which items are correlated with a new item, we show the item (or combination of items) that an individual has seen, purchased, read, etc. on the left and the item that they are likely to enjoy (or need) seeing, purchasing, or reading is shown on the right.  In the second link, they call each of these sets a rule.</p>
+<p>There are three terms and corresponding computations that are frequently used to understand how well we are able to predict what new items an individual might like based on their previous items.  </p>
+
+<ul>
+  <li> <b>lift</b> - ratio by which the confidence exceeds a confidence value computed by chance alone.
+  <li> <b>confidence</b> - given the item(s) on the left of a rule, we find the proportion of cases that the item(s) on the right are the case
+  <li> <b>support</b> - the fraction of times that the rule set appears in the dataset.
+</ul>
+
+<p>We can then apply support and confidence to our dataset.  Below, I have asked to give me the rules that have support greater than 0.0005 and confidence of greater than 0.80.  I have stored these in <b>ba</b>, and we can look at the first 10 of these rules.  From the summary, we can see that there are more than 9,500 rules that meet this criteria.  We also see additional information regarding the support, confidence, and lift satistics.</p>
+
+<!--begin.rcode
+ba = apriori(Groceries, parameter = list(supp = .0005, conf = .8))
+options(digits = 2)
+inspect(ba[1:5])
+summary(ba)
+end.rcode-->
+
+<p>If you wanted to have a 'more comfortable' environment for viewing these association rules, you could move the rules to a .csv.  Note, the .csv file created with the line of code below will be stored wherever your current working directory is set.  You can change your working directory by choosing <b>Session</b>, then <b>Set Working Directory</b>, and then <b>Choose Directory</b>.</p>
+
+<!--begin.rcode
+write(ba, file="rules.csv", sep=",", col.names=NA)
+end.rcode-->
+
+<p>We could sort by any of the three statistics using the <b>sort()</b> function.  </p>
+
+<!--begin.rcode
+ba = sort(ba, by = "lift", decreasing=TRUE)
+inspect(ba[1:5])
+end.rcode-->
+
+<p>We could see which items are indicative of purchasing sugar, and then we might order based on any of our statistics of interest.  </p>
+
+<!--begin.rcode
+rules = apriori(data=Groceries, parameter=list(supp=0.001,conf = 0.2), 
+               appearance = list(default="lhs",rhs="sugar"),
+               control = list(verbose=F))
+
+rules=sort(rules, decreasing=TRUE,by="lift")
+inspect(rules[1:5])
+end.rcode-->
+
+<p>In this case, sorting by lift (above) or confidence (below) lead to the same top 5 results.</p>
+
+<!--begin.rcode
+rules=sort(rules, decreasing=TRUE,by="confidence")
+inspect(rules[1:5])
+end.rcode-->
+
+<p>We might change up the question to ask: "If an individual purchases sugar, what else might they purchase?"  In this case, there are only 8 rules associated for which purchasing sugar helps indicate the purchase of additional items.  Asking for more rules then are available provides an error.</p>
+
+<!--begin.rcode
+rules = apriori(data=Groceries, parameter=list(supp=0.001,conf = 0.15, minlen=2), 
+               appearance = list(default="rhs",lhs="sugar"),
+               control = list(verbose=T))
+
+summary(rules)
+rules = sort(rules, decreasing=TRUE,by="confidence")
+inspect(rules[1:8])
+end.rcode-->
+
+<p>This has been a quick example to give you some insight into how market basket analysis (MBA) works, the terminology associated with MBA, and how it might be used in a 'real world' case.  Feel free to take a closer look at the dataset considered for this example.</p>
+</body>
+</html>

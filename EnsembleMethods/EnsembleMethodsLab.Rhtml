@@ -1,0 +1,150 @@
+<html>
+
+<head>
+<title>Ensemble Methods</title>
+</head>
+
+
+<body>
+
+<b>Ensemble Methods</b>
+<br></br>
+<p>In this lab we will be looking at ensemble methods.  An ensemble method is a way of taking 'weak predictors' and combining them to make 'strong predictors.'  The most common ensemble methods are commonly done with the use of tree based methods, and are: </p>
+
+<ul>
+  <li> Random Forests
+  <li> Gradient Boosting Machines
+</ul>
+
+<p>For the purposes of 'Big Data,' you can easily parallelize the random forest algorithm across multiple machines because each tree you build is independent of each other tree.  Alternatively, gradient boosting is not easily parallelizable because each new split depends on the residual of the split that occurred at the previous step.</p>
+
+<p>Grandient boosting and random forests are two of the most common methods for building the best predictive models that exist today.  Both can be used for either categorical or quantitative response variables when combined with decision trees, which is commonly where both are implemented in practice.  </p>
+
+<p>Start with the installation of the libraries we will be using.</p>
+
+<!--begin.rcode
+library(ElemStatLearn)
+library(MASS)
+library(randomForest)
+library(gbm)
+library(tree)
+end.rcode-->
+
+<p>For the purpose of the lab, we will be using the spam dataset from the ElemStatLearn library.  I imagine there was a massive amount of cleaning to get the dataframe that we will be using.  Reading through the dataset page will provide some insight into how each column was constructed.</p>
+
+<!--begin.rcode
+head(spam)
+dim(spam)
+?spam
+end.rcode-->
+
+<p>At the end of the day, we essentially want to predict whether an email is spam or not based on the attributes of that email. We can see that approximately 40% of the emails in this listing are spam.  In practice, we should do EDA to see what is true about the variable columns using <b>summary()</b> to obtain statistics about each and using the <b>ggplot2</b> library to explore the relationships between each variable. </p>
+
+<!--begin.rcode 
+length(spam$spam[spam$spam == "spam"]) /nrow(spam)
+end.rcode-->
+
+<p>I will simply be focusing on using our new techniques to make predictions and comparing our models. I did look at some plots outside of this document, and I did check the structure to assure that the variable types for each column seemed reasonable. First, let me split the data into training and test data.</p>
+
+<!--begin.rcode 
+set.seed(24)
+train_ind = sample(nrow(spam), nrow(spam)/2) 
+train_data = spam[train_ind,]
+test_data = spam[-train_ind,]
+end.rcode-->
+
+
+<p>Here I am going to 'blindly' fit a few different models to see how our ability to classify comprares across all modeling techniques. Each model fit is labeled below.  For models where I was not able to follow a somewhat 'standard' procedure, I have discussed why I needed to make a necessary change in the next paragraph.</p>
+
+<p>A few notes about the algorithms that required a little extra effort.  I had to manually look for the 'best' pruned tree using the cross-validation function.  'Googling' the warning yields the following <a href ="http://stats.stackexchange.com/questions/11109/how-to-deal-with-perfect-separation-in-logistic-regression">page</a> to assist with information and corrections.  Remember that the logistic regression output is a predicted probability of spam.  I, therefore, changed this to 'spam' or 'email' manually based on a 0.5 cutoff. Bagging is a special case of random forests in which all the predictors can be chosen at each split.  The updated training and test datasets were to make 'spam' and 'email' into '1' and '0,' as the <b>gbm()</b> algorithm only accepts a response of 0 and 1 (not in words).  </p>
+
+<ul>
+  <li> Decision Tree
+<!--begin.rcode 
+tree_spam = tree(spam~.-spam, train_data)
+end.rcode-->
+  <li> Logistic Regression Model
+<!--begin.rcode 
+logistic_spam = glm(spam~.-spam, train_data, family = binomial(link='logit'))
+end.rcode-->
+  <li> Pruned Decision Tree (Based on Cross-validated)
+<!--begin.rcode 
+cvtree_spam = cv.tree(tree_spam, FUN=prune.misclass) #Shows Best Tree is of 11 nodes
+prune_dt_spam = prune.misclass(tree_spam, best=11)
+end.rcode-->
+  <li> Bagging
+<!--begin.rcode 
+bag_spam = randomForest(spam~., data = train_data, mtry=57, importance=TRUE)
+end.rcode-->
+  <li> Random Forest
+<!--begin.rcode 
+rf_spam = randomForest(spam~., data = train_data, mtry=sqrt(57))
+end.rcode-->
+  <li> Gradient Boosting
+<!--begin.rcode 
+train_data2 = train_data[,-ncol(train_data)]
+train_data2$spam2 = c(1, 0)[unclass(train_data$spam)]
+test_data2 = test_data[,-ncol(test_data)]
+test_data2$spam2 = c(1, 0)[unclass(test_data$spam)]
+gbm_spam = gbm(spam2~., data = train_data2, distribution="bernoulli", 
+               n.trees=500, interaction.depth=5, shrinkage=0.2)
+gbm.perf(gbm_spam, plot.it=FALSE)
+end.rcode-->
+</ul>
+
+<p>Then we can save the predictions from each method on the test data, and compare the predictions to the actual values in the test set to judge the fit. </p>
+
+<ul>
+  <li> Decision Tree
+<!--begin.rcode 
+tree_pred = predict(tree_spam, test_data, type="class")
+table(test_data$spam, tree_pred)
+end.rcode-->
+  <li> Logistic Regression Model
+<!--begin.rcode 
+prob_pred = predict(logistic_spam, test_data)
+logistic_pred = rep("email", nrow(test_data))
+logistic_pred[prob_pred > 0.5] = "spam" 
+table(test_data$spam, logistic_pred)
+end.rcode-->
+  <li> Pruned Decision Tree (Based on Cross-validated)
+<!--begin.rcode 
+cvtree_pred = predict(prune_dt_spam, test_data, type="class")
+table(test_data$spam, cvtree_pred)
+end.rcode-->
+  <li> Bagging
+<!--begin.rcode 
+bag_pred = predict(bag_spam, test_data, type="class")
+table(test_data$spam, bag_pred)
+end.rcode-->
+  <li> Random Forest
+<!--begin.rcode 
+rf_pred = predict(rf_spam, test_data, type="class")
+table(test_data$spam, rf_pred)
+end.rcode-->
+  <li> Gradient Boosting
+<!--begin.rcode 
+gbm_prob_pred = predict(gbm_spam, test_data2, n.trees=31, type="response")
+gbm_pred = rep("email", nrow(test_data2))
+gbm_pred[gbm_prob_pred < 0.5] = "spam" 
+table(test_data$spam, gbm_pred)
+end.rcode-->
+</ul>
+
+<p>Before commenting about the regarding results, I would like to point some of the important characteristics of the ensemble methods.  With random forests, we are randomly selecting data points to use to fit our tree.  We are also randomly selecting the features that are available for each tree.  Randomly selecting features assures that all the trees aren't doing all the same splits.  Because of this, we are de-correlating our trees, and we are coming up with a modeling method that will not overfit our training data.  Random forests are usually grown very deep - that is they have a lot of splits, and we build many trees and average the predictions from all the trees to predict for a new dataset.  We do not have to worry about choosing a very large number of trees in random forests, because this method will not overfit when using more trees.</p>
+
+<p>With boosting, there are essentially three main components that we often optimize using cross validataion techniques:
+<ul>
+  <li> <b>n.trees</b> - Chooses the number of trees.  Unlike random forests, choosing too many trees will overfit your training data.
+<br></br>
+  <li> <b>interaction.depth</b> - Chooses how deep you want each tree to be on fitting each residual.  Could be a large or small number of splits depending on your data.  The text suggests stumps often work well.
+<br></br>
+  <li> <b>shrinkage</b> - A value between 0 and 1. The text discusses using 0.01 or 0.001, but is dependent on the number of trees.  Smaller values can require a larger number of trees.
+</ul>
+
+The <b>gbm.perf()</b> function helps us choose the optimal number of trees to build.  In this case, it suggests 31 trees; but we might tweak back and forth with the number of trees and the shrinkage parameter to find an optimal combination.</p>
+
+<p>Looking at the results we could compute the recall, precision, and accuracy; but it isn't hard to see based on the confusion matrix that random forests appear to be the best performer for this round.  The gbm algorithm comes in at a close second, and tweaking the three parameters discussed above, we might be able to build an alternative model that outperforms the random forest method. </p>
+
+</body>
+</html>

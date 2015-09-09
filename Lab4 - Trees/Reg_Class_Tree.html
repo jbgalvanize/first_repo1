@@ -1,0 +1,400 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Classification and Regression Trees</title>
+</head>
+
+<body>
+
+<b>Classification and Regression Trees</b>
+<br></br>
+<b>Classification Trees</b>
+<br></br>
+<p>In this lab, we will be showing how decision trees can make predictions for both categorical and quantitative response variable cases.  In the case of a categorical response, we call the model a classification tree.  In the case of a quantitative response, we call our model a regression tree.  First, let's look at a classification tree example.</p>
+
+<p>Here, we are loading the necessary libraries and attaching our dataset.</p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(tree)</span>
+<span class="hl kwd">library</span><span class="hl std">(ISLR)</span>
+<span class="hl kwd">library</span><span class="hl std">(ggplot2)</span>
+<span class="hl kwd">library</span><span class="hl std">(rpart)</span>
+<span class="hl kwd">library</span><span class="hl std">(rpart.plot)</span>
+<span class="hl kwd">library</span><span class="hl std">(C50)</span>
+<span class="hl kwd">attach</span><span class="hl std">(Carseats)</span>
+</pre></div>
+</div></div>
+
+<p>We can take a quick look at our dataset of interest.  In a real analysis, you would want to take a closer look at the univariate, bivariate, etc. relationships that exist using summary statistics and visual methods to explore.  Here, I just want to give you an idea of the type of data we will be working with for our classification example.</p>
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">head</span><span class="hl std">(Carseats)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##   Sales CompPrice Income Advertising Population Price ShelveLoc Age
+## 1  9.50       138     73          11        276   120       Bad  42
+## 2 11.22       111     48          16        260    83      Good  65
+## 3 10.06       113     35          10        269    80    Medium  59
+## 4  7.40       117    100           4        466    97    Medium  55
+## 5  4.15       141     64           3        340   128       Bad  38
+## 6 10.81       124    113          13        501    72       Bad  78
+##   Education Urban  US
+## 1        17   Yes Yes
+## 2        10   Yes Yes
+## 3        12   Yes Yes
+## 4        14   Yes Yes
+## 5        13   Yes  No
+## 6        16    No Yes
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">dim</span><span class="hl std">(Carseats)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 400  11
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">str</span><span class="hl std">(Carseats)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 'data.frame':	400 obs. of  11 variables:
+##  $ Sales      : num  9.5 11.22 10.06 7.4 4.15 ...
+##  $ CompPrice  : num  138 111 113 117 141 124 115 136 132 132 ...
+##  $ Income     : num  73 48 35 100 64 113 105 81 110 113 ...
+##  $ Advertising: num  11 16 10 4 3 13 0 15 0 0 ...
+##  $ Population : num  276 260 269 466 340 501 45 425 108 131 ...
+##  $ Price      : num  120 83 80 97 128 72 108 120 124 124 ...
+##  $ ShelveLoc  : Factor w/ 3 levels &quot;Bad&quot;,&quot;Good&quot;,&quot;Medium&quot;: 1 2 3 3 1 1 3 2 3 3 ...
+##  $ Age        : num  42 65 59 55 38 78 71 67 76 76 ...
+##  $ Education  : num  17 10 12 14 13 16 15 10 10 17 ...
+##  $ Urban      : Factor w/ 2 levels &quot;No&quot;,&quot;Yes&quot;: 2 2 2 2 2 1 2 2 1 1 ...
+##  $ US         : Factor w/ 2 levels &quot;No&quot;,&quot;Yes&quot;: 2 2 2 2 1 2 1 2 1 2 ...
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl opt">?</span><span class="hl std">Carseats</span>
+</pre></div>
+</div></div>
+
+<p>We might want to predict whether a company will have 'low', 'medium', or 'high' sales.  In order to create our new variable that we would like to predict, I use the <b>cut()</b> function below. I then rename the levels of our variable. </p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">Carseats</span><span class="hl opt">$</span><span class="hl std">Sales1</span> <span class="hl kwb">=</span> <span class="hl kwd">cut</span><span class="hl std">(Sales,</span><span class="hl num">3</span><span class="hl std">)</span>
+<span class="hl kwd">levels</span><span class="hl std">(Carseats</span><span class="hl opt">$</span><span class="hl std">Sales1)</span> <span class="hl kwb">=</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl str">&quot;low&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;med&quot;</span><span class="hl std">,</span> <span class="hl str">&quot;high&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<p>In order to check how well our tree is able to predict, I have created training and validation datasets.</p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">set.seed</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl std">)</span>
+<span class="hl std">train</span> <span class="hl kwb">=</span> <span class="hl kwd">sample</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">nrow</span><span class="hl std">(Carseats),</span> <span class="hl kwd">nrow</span><span class="hl std">(Carseats)</span><span class="hl opt">/</span><span class="hl num">2</span><span class="hl std">)</span>
+<span class="hl std">train_dat</span> <span class="hl kwb">=</span> <span class="hl std">Carseats[train,]</span>
+<span class="hl std">val_dat</span> <span class="hl kwb">=</span> <span class="hl std">Carseats[</span><span class="hl opt">-</span><span class="hl std">train,]</span>
+</pre></div>
+</div></div>
+
+<p>We can now fit our classification tree to the training data, and we can take a look at how it chooses to split our data into particular categories. The 'pretty' argument determines the font type used on your decision tree.</p>
+
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mod</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(Sales1</span><span class="hl opt">~</span><span class="hl std">CompPrice</span><span class="hl opt">+</span><span class="hl std">Income</span><span class="hl opt">+</span><span class="hl std">Advertising</span><span class="hl opt">+</span><span class="hl std">Population</span><span class="hl opt">+</span><span class="hl std">Price</span><span class="hl opt">+</span><span class="hl std">ShelveLoc</span><span class="hl opt">+</span><span class="hl std">Age</span><span class="hl opt">+</span><span class="hl std">Education</span><span class="hl opt">+</span><span class="hl std">Urban</span><span class="hl opt">+</span><span class="hl std">US, train_dat)</span>
+<span class="hl kwd">plot</span><span class="hl std">(mod)</span>
+<span class="hl kwd">text</span><span class="hl std">(mod,</span> <span class="hl kwc">pretty</span><span class="hl std">=</span><span class="hl num">0</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-5-1.png" title="plot of chunk unnamed-chunk-5" alt="plot of chunk unnamed-chunk-5" class="plot" /></div></div>
+
+<p>We can learn a bit more about our model by printing it or looking at a summary.</p>
+
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#mod </span>
+<span class="hl kwd">summary</span><span class="hl std">(mod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Classification tree:
+## tree(formula = Sales1 ~ CompPrice + Income + Advertising + Population + 
+##     Price + ShelveLoc + Age + Education + Urban + US, data = train_dat)
+## Variables actually used in tree construction:
+## [1] &quot;ShelveLoc&quot;   &quot;Price&quot;       &quot;Income&quot;      &quot;Age&quot;         &quot;CompPrice&quot;  
+## [6] &quot;Advertising&quot; &quot;Education&quot;   &quot;Population&quot; 
+## Number of terminal nodes:  23 
+## Residual mean deviance:  0.6063 = 107.3 / 177 
+## Misclassification error rate: 0.135 = 27 / 200
+</pre></div>
+</div></div>
+
+<p>We might want to use cross-validation to assure that our tree isn't over-fitting the data.  We can do this using the <b>cv.tree()</b> function.  The default is 10-fold, which means we split the dataset into 10 equal sized parts.  We fit our model to 9 of the 10 parts and predict for the last set.  We then change to a new validation set.  Finally, we average the predictions from each of the k-folds.  You can look at the k-folds algorithm described <a href ="https://en.wikipedia.org/wiki/Cross-validation_(statistics)">here</a>.  The <b>names()</b> function provides the options internal to our model.</p>
+
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">cv_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">cv.tree</span><span class="hl std">(mod,</span> <span class="hl kwc">FUN</span><span class="hl std">=prune.misclass)</span>
+<span class="hl kwd">names</span><span class="hl std">(cv_mod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] &quot;size&quot;   &quot;dev&quot;    &quot;k&quot;      &quot;method&quot;
+</pre></div>
+</div></div>
+
+<p>We apply our results to the <b>prune.tree()</b> function. We could choose the number of ending nodes in our tree based on minimizing the deviance using the misclassification method - that is, we are minimizing the number of misclassifications we are making.  Below, I am pruning the classification tree based on the choosing the number of ending nodes where the deviance is smallest.</p>
+
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">prune_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">prune.tree</span><span class="hl std">(mod,</span> <span class="hl kwc">best</span> <span class="hl std">= cv_mod</span><span class="hl opt">$</span><span class="hl std">size[</span><span class="hl kwd">which.min</span><span class="hl std">(cv_mod</span><span class="hl opt">$</span><span class="hl std">dev)])</span>
+<span class="hl kwd">plot</span><span class="hl std">(prune_mod)</span>
+<span class="hl kwd">text</span><span class="hl std">(prune_mod)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-8-1.png" title="plot of chunk unnamed-chunk-8" alt="plot of chunk unnamed-chunk-8" class="plot" /></div></div>
+
+<p>There are two additional libraries that can be used to fit decision trees, which use the <b>rpart()</b> and <b>C5.0()</b> functions.  These decision trees are both fit below.  Unfortunately, it is not easy to plot the tree using the final function.  For more details on the below functions please see the documentation.</p>
+
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mod1</span> <span class="hl kwb">=</span> <span class="hl kwd">rpart</span><span class="hl std">(Sales1</span><span class="hl opt">~</span><span class="hl std">CompPrice</span><span class="hl opt">+</span><span class="hl std">Income</span><span class="hl opt">+</span><span class="hl std">Advertising</span><span class="hl opt">+</span><span class="hl std">Population</span><span class="hl opt">+</span><span class="hl std">Price</span><span class="hl opt">+</span><span class="hl std">ShelveLoc</span><span class="hl opt">+</span><span class="hl std">Age</span><span class="hl opt">+</span><span class="hl std">Education</span><span class="hl opt">+</span><span class="hl std">Urban</span><span class="hl opt">+</span><span class="hl std">US, train_dat)</span>
+<span class="hl kwd">rpart.plot</span><span class="hl std">(mod1,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl num">3</span><span class="hl std">,</span> <span class="hl kwc">extra</span><span class="hl std">=</span><span class="hl num">101</span><span class="hl std">,</span><span class="hl kwc">fallen.leaves</span><span class="hl std">=</span><span class="hl num">TRUE</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-9-1.png" title="plot of chunk unnamed-chunk-9" alt="plot of chunk unnamed-chunk-9" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl std">c50_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">C5.0</span><span class="hl std">(train_dat[,</span><span class="hl kwd">c</span><span class="hl std">(</span><span class="hl num">2</span><span class="hl opt">:</span><span class="hl num">11</span><span class="hl std">)], train_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+<span class="hl com">#summary(c50_mod)</span>
+</pre></div>
+</div></div>
+
+<p>The way a model chooses to split is on the basis of <b>entropy</b>, <b>gini</b>, and/or <b>misclassification</b> rates.  Looking through the documentation shows which method is used to determine splits.  The gini method is very popular.  You can see how this method is completed in a small example <a href="https://www.youtube.com/watch?v=Zze7SKuz9QQ">here</a>.  Later methods that are combined with decision trees will help us optimize regardless of the technique you use for splitting.</p>
+
+<p>We can check how well each method above predicts by constructing a confusion matrix of the results from each model.  Here, I have made predictions from each model:</p>
+
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">pred_prune_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(prune_mod, val_dat,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl std">pred_rpart_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(mod1, val_dat,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl std">pred_c50_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(c50_mod, val_dat,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl std">pred_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(mod, val_dat,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+
+<p>Then we can look at the confusion matrices from each method and the misclassification rates.</p>
+
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(pred_prune_mod, val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##               
+## pred_prune_mod low med high
+##           low   25  13    0
+##           med   24  98   13
+##           high   0  10   17
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(pred_rpart_mod, val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##               
+## pred_rpart_mod low med high
+##           low   18   8    0
+##           med   31  99    9
+##           high   0  14   21
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(pred_c50_mod, val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##             
+## pred_c50_mod low med high
+##         low   33  26    1
+##         med   16  87   15
+##         high   0   8   14
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">table</span><span class="hl std">(pred_mod, val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##         
+## pred_mod low med high
+##     low   26  17    0
+##     med   23  92   13
+##     high   0  12   17
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl com">#mis-classification rates</span>
+<span class="hl kwd">mean</span><span class="hl std">(pred_prune_mod</span> <span class="hl opt">!=</span> <span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.3
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">mean</span><span class="hl std">(pred_rpart_mod</span> <span class="hl opt">!=</span> <span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.31
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">mean</span><span class="hl std">(pred_c50_mod</span> <span class="hl opt">!=</span> <span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.33
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">mean</span><span class="hl std">(pred_mod</span> <span class="hl opt">!=</span> <span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">Sales1)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.325
+</pre></div>
+</div></div>
+
+<b>Regression Tree</b>
+<br></br>
+<p>Now, we will look at a regression tree example.  Here, I will use the Boston dataset.</p>
+
+<div class="chunk" id="unnamed-chunk-12"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(MASS)</span>
+<span class="hl kwd">library</span><span class="hl std">(ggplot2)</span>
+<span class="hl kwd">attach</span><span class="hl std">(Boston)</span>
+<span class="hl opt">?</span><span class="hl std">Boston</span>
+<span class="hl kwd">head</span><span class="hl std">(Boston)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##      crim zn indus chas   nox    rm  age    dis rad tax ptratio  black
+## 1 0.00632 18  2.31    0 0.538 6.575 65.2 4.0900   1 296    15.3 396.90
+## 2 0.02731  0  7.07    0 0.469 6.421 78.9 4.9671   2 242    17.8 396.90
+## 3 0.02729  0  7.07    0 0.469 7.185 61.1 4.9671   2 242    17.8 392.83
+## 4 0.03237  0  2.18    0 0.458 6.998 45.8 6.0622   3 222    18.7 394.63
+## 5 0.06905  0  2.18    0 0.458 7.147 54.2 6.0622   3 222    18.7 396.90
+## 6 0.02985  0  2.18    0 0.458 6.430 58.7 6.0622   3 222    18.7 394.12
+##   lstat medv
+## 1  4.98 24.0
+## 2  9.14 21.6
+## 3  4.03 34.7
+## 4  2.94 33.4
+## 5  5.33 36.2
+## 6  5.21 28.7
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">dim</span><span class="hl std">(Boston)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 506  14
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">str</span><span class="hl std">(Boston)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 'data.frame':	506 obs. of  14 variables:
+##  $ crim   : num  0.00632 0.02731 0.02729 0.03237 0.06905 ...
+##  $ zn     : num  18 0 0 0 0 0 12.5 12.5 12.5 12.5 ...
+##  $ indus  : num  2.31 7.07 7.07 2.18 2.18 2.18 7.87 7.87 7.87 7.87 ...
+##  $ chas   : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ nox    : num  0.538 0.469 0.469 0.458 0.458 0.458 0.524 0.524 0.524 0.524 ...
+##  $ rm     : num  6.58 6.42 7.18 7 7.15 ...
+##  $ age    : num  65.2 78.9 61.1 45.8 54.2 58.7 66.6 96.1 100 85.9 ...
+##  $ dis    : num  4.09 4.97 4.97 6.06 6.06 ...
+##  $ rad    : int  1 2 2 3 3 3 5 5 5 5 ...
+##  $ tax    : num  296 242 242 222 222 222 311 311 311 311 ...
+##  $ ptratio: num  15.3 17.8 17.8 18.7 18.7 18.7 15.2 15.2 15.2 15.2 ...
+##  $ black  : num  397 397 393 395 397 ...
+##  $ lstat  : num  4.98 9.14 4.03 2.94 5.33 ...
+##  $ medv   : num  24 21.6 34.7 33.4 36.2 28.7 22.9 27.1 16.5 18.9 ...
+</pre></div>
+</div></div>
+
+<p>Here, we can take a quick look at the univariate and bivariate relationships visually.  I have provided an easy way to look at multiple univariate plots at the same time.  You may choose not to run the qplot() functions.  I have commented out all of the plots for the ease of reading this document.</p>
+
+<div class="chunk" id="unnamed-chunk-13"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl com">#par(mfrow=c(3,3))</span>
+<span class="hl com">#hist(medv);hist(lstat);hist(black)</span>
+<span class="hl com">#hist(crim);hist(age);hist(tax)</span>
+<span class="hl com">#hist(rm);hist(ptratio);hist(nox)</span>
+
+<span class="hl com">#qplot(age,medv);qplot(lstat,medv);qplot(crim,medv)</span>
+<span class="hl com">#qplot(rm,medv);qplot(ptratio,medv);qplot(nox,medv)</span>
+<span class="hl com">#qplot(zn,medv);qplot(black,medv);qplot(tax,medv)</span>
+</pre></div>
+</div></div>
+
+<p>Again, let's split our dataset into training and validation.</p>
+
+<div class="chunk" id="unnamed-chunk-14"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">train</span> <span class="hl kwb">=</span> <span class="hl kwd">sample</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl opt">:</span><span class="hl kwd">nrow</span><span class="hl std">(Boston),</span> <span class="hl kwd">nrow</span><span class="hl std">(Boston)</span><span class="hl opt">/</span><span class="hl num">2</span><span class="hl std">)</span>
+<span class="hl std">train_dat</span> <span class="hl kwb">=</span> <span class="hl std">Boston[train,]</span>
+<span class="hl std">val_dat</span> <span class="hl kwb">=</span> <span class="hl std">Boston[</span><span class="hl opt">-</span><span class="hl std">train,]</span>
+</pre></div>
+</div></div>
+
+<p>Now, we can go through a similar process to the above to fit a tree in a regression setting.  Here, we usually try to minimize the MSE (which is the deviance) on the validation set during cross-validation.  Because we did the same process above, I simply left comments in the code to assist as you work through.</p>
+
+<div class="chunk" id="unnamed-chunk-15"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">mod</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(medv</span><span class="hl opt">~</span><span class="hl std">., train_dat)</span> <span class="hl com">#create tree using all of the predictors</span>
+<span class="hl com">#mod #You can see how many observations go into each part of the split</span>
+<span class="hl kwd">plot</span><span class="hl std">(mod)</span> <span class="hl com">#Plot the tree model</span>
+<span class="hl kwd">text</span><span class="hl std">(mod,</span> <span class="hl kwc">pretty</span><span class="hl std">=</span><span class="hl num">0</span><span class="hl std">)</span> <span class="hl com">#Add text for the tree model</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-15-1.png" title="plot of chunk unnamed-chunk-15" alt="plot of chunk unnamed-chunk-15" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl kwd">summary</span><span class="hl std">(mod)</span> <span class="hl com">#Summary that corresponds to tree</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## 
+## Regression tree:
+## tree(formula = medv ~ ., data = train_dat)
+## Variables actually used in tree construction:
+## [1] &quot;rm&quot;    &quot;lstat&quot; &quot;nox&quot;   &quot;tax&quot;  
+## Number of terminal nodes:  8 
+## Residual mean deviance:  11.92 = 2920 / 245 
+## Distribution of residuals:
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## -8.9380 -2.3230  0.1769  0.0000  2.2770 13.3100
+</pre></div>
+</div></div>
+
+
+
+<div class="chunk" id="unnamed-chunk-16"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">pred_val</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(mod, val_dat)</span>
+<span class="hl kwd">mean</span><span class="hl std">((pred_val</span><span class="hl opt">-</span><span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">medv)</span><span class="hl opt">^</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 32.76422
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl com">#Plot predicted vs actual or plot the </span>
+<span class="hl kwd">plot</span><span class="hl std">(pred_val, val_dat</span><span class="hl opt">$</span><span class="hl std">medv)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-16-1.png" title="plot of chunk unnamed-chunk-16" alt="plot of chunk unnamed-chunk-16" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl kwd">plot</span><span class="hl std">(pred_val,(pred_val</span><span class="hl opt">-</span><span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">medv))</span>
+<span class="hl kwd">abline</span><span class="hl std">(</span><span class="hl kwc">h</span><span class="hl std">=</span><span class="hl num">0</span><span class="hl std">,</span> <span class="hl kwc">col</span><span class="hl std">=</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-16-2.png" title="plot of chunk unnamed-chunk-16" alt="plot of chunk unnamed-chunk-16" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl com">#We could find out if we need to trim the tree by using cross-validation</span>
+<span class="hl std">cv_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">cv.tree</span><span class="hl std">(mod)</span> <span class="hl com">#default is 10 fold, you can change the number of folds using k=(number) as an argument</span>
+<span class="hl kwd">names</span><span class="hl std">(cv_mod)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] &quot;size&quot;   &quot;dev&quot;    &quot;k&quot;      &quot;method&quot;
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">plot</span><span class="hl std">(cv_mod</span><span class="hl opt">$</span><span class="hl std">size, cv_mod</span><span class="hl opt">$</span><span class="hl std">dev,</span> <span class="hl kwc">type</span> <span class="hl std">=</span> <span class="hl str">'b'</span><span class="hl std">)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-16-3.png" title="plot of chunk unnamed-chunk-16" alt="plot of chunk unnamed-chunk-16" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl std">cv_mod</span><span class="hl opt">$</span><span class="hl std">size[</span><span class="hl kwd">which.min</span><span class="hl std">(cv_mod</span><span class="hl opt">$</span><span class="hl std">dev)]</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 8
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">prune_mod</span> <span class="hl kwb">=</span> <span class="hl kwd">prune.tree</span><span class="hl std">(mod,</span> <span class="hl kwc">best</span> <span class="hl std">=</span> <span class="hl num">4</span><span class="hl std">)</span> <span class="hl com">#Use prune.tree where there are only 4 final predictions</span>
+<span class="hl kwd">plot</span><span class="hl std">(prune_mod)</span>
+<span class="hl kwd">text</span><span class="hl std">(prune_mod)</span>
+</pre></div>
+</div><div class="rimage default"><img src="figure/unnamed-chunk-16-4.png" title="plot of chunk unnamed-chunk-16" alt="plot of chunk unnamed-chunk-16" class="plot" /></div><div class="rcode">
+<div class="source"><pre class="knitr r"><span class="hl com">#Compare MSE to above</span>
+<span class="hl std">prune_pred_val</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(prune_mod, val_dat)</span>
+<span class="hl kwd">mean</span><span class="hl std">((prune_pred_val</span><span class="hl opt">-</span><span class="hl std">val_dat</span><span class="hl opt">$</span><span class="hl std">medv)</span><span class="hl opt">^</span><span class="hl num">2</span><span class="hl std">)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 39.19151
+</pre></div>
+</div></div>
+<p>For this case, our cross-validation model did worse.</p>
+</body>
+</html>

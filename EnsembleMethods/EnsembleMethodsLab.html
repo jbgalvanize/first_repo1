@@ -1,0 +1,306 @@
+<html>
+
+<head>
+<style type="text/css">
+.knitr .inline {
+  background-color: #f7f7f7;
+  border:solid 1px #B0B0B0;
+}
+.error {
+	font-weight: bold;
+	color: #FF0000;
+}
+.warning {
+	font-weight: bold;
+}
+.message {
+	font-style: italic;
+}
+.source, .output, .warning, .error, .message {
+	padding: 0 1em;
+  border:solid 1px #F7F7F7;
+}
+.source {
+  background-color: #f5f5f5;
+}
+.rimage .left {
+  text-align: left;
+}
+.rimage .right {
+  text-align: right;
+}
+.rimage .center {
+  text-align: center;
+}
+.hl.num {
+  color: #AF0F91;
+}
+.hl.str {
+  color: #317ECC;
+}
+.hl.com {
+  color: #AD95AF;
+  font-style: italic;
+}
+.hl.opt {
+  color: #000000;
+}
+.hl.std {
+  color: #585858;
+}
+.hl.kwa {
+  color: #295F94;
+  font-weight: bold;
+}
+.hl.kwb {
+  color: #B05A65;
+}
+.hl.kwc {
+  color: #55aa55;
+}
+.hl.kwd {
+  color: #BC5A65;
+  font-weight: bold;
+}
+</style>
+<title>Ensemble Methods</title>
+</head>
+
+
+<body>
+
+<b>Ensemble Methods</b>
+<br></br>
+<p>In this lab we will be looking at ensemble methods.  An ensemble method is a way of taking 'weak predictors' and combining them to make 'strong predictors.'  The most common ensemble methods are commonly done with the use of tree based methods, and are: </p>
+
+<ul>
+  <li> Random Forests
+  <li> Gradient Boosting Machines
+</ul>
+
+<p>For the purposes of 'Big Data,' you can easily parallelize the random forest algorithm across multiple machines because each tree you build is independent of each other tree.  Alternatively, gradient boosting is not easily parallelizable because each new split depends on the residual of the split that occurred at the previous step.</p>
+
+<p>Grandient boosting and random forests are two of the most common methods for building the best predictive models that exist today.  Both can be used for either categorical or quantitative response variables when combined with decision trees, which is commonly where both are implemented in practice.  </p>
+
+<p>Start with the installation of the libraries we will be using.</p>
+
+<div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(ElemStatLearn)</span>
+<span class="hl kwd">library</span><span class="hl std">(MASS)</span>
+<span class="hl kwd">library</span><span class="hl std">(randomForest)</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(gbm)</span>
+</pre></div>
+<div class="message"><pre class="knitr r">## Loading required package: survival
+## Loading required package: lattice
+## Loading required package: splines
+## Loading required package: parallel
+## Loaded gbm 2.1.1
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">library</span><span class="hl std">(tree)</span>
+</pre></div>
+</div></div>
+
+<p>For the purpose of the lab, we will be using the spam dataset from the ElemStatLearn library.  I imagine there was a massive amount of cleaning to get the dataframe that we will be using.  Reading through the dataset page will provide some insight into how each column was constructed.</p>
+
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">head</span><span class="hl std">(spam)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##    A.1  A.2  A.3 A.4  A.5  A.6  A.7  A.8  A.9 A.10 A.11 A.12 A.13 A.14
+## 1 0.00 0.64 0.64   0 0.32 0.00 0.00 0.00 0.00 0.00 0.00 0.64 0.00 0.00
+## 2 0.21 0.28 0.50   0 0.14 0.28 0.21 0.07 0.00 0.94 0.21 0.79 0.65 0.21
+## 3 0.06 0.00 0.71   0 1.23 0.19 0.19 0.12 0.64 0.25 0.38 0.45 0.12 0.00
+## 4 0.00 0.00 0.00   0 0.63 0.00 0.31 0.63 0.31 0.63 0.31 0.31 0.31 0.00
+## 5 0.00 0.00 0.00   0 0.63 0.00 0.31 0.63 0.31 0.63 0.31 0.31 0.31 0.00
+## 6 0.00 0.00 0.00   0 1.85 0.00 0.00 1.85 0.00 0.00 0.00 0.00 0.00 0.00
+##   A.15 A.16 A.17 A.18 A.19 A.20 A.21 A.22 A.23 A.24 A.25 A.26 A.27 A.28
+## 1 0.00 0.32 0.00 1.29 1.93 0.00 0.96    0 0.00 0.00    0    0    0    0
+## 2 0.14 0.14 0.07 0.28 3.47 0.00 1.59    0 0.43 0.43    0    0    0    0
+## 3 1.75 0.06 0.06 1.03 1.36 0.32 0.51    0 1.16 0.06    0    0    0    0
+## 4 0.00 0.31 0.00 0.00 3.18 0.00 0.31    0 0.00 0.00    0    0    0    0
+## 5 0.00 0.31 0.00 0.00 3.18 0.00 0.31    0 0.00 0.00    0    0    0    0
+## 6 0.00 0.00 0.00 0.00 0.00 0.00 0.00    0 0.00 0.00    0    0    0    0
+##   A.29 A.30 A.31 A.32 A.33 A.34 A.35 A.36 A.37 A.38 A.39 A.40 A.41 A.42
+## 1    0    0    0    0    0    0    0    0 0.00    0    0 0.00    0    0
+## 2    0    0    0    0    0    0    0    0 0.07    0    0 0.00    0    0
+## 3    0    0    0    0    0    0    0    0 0.00    0    0 0.06    0    0
+## 4    0    0    0    0    0    0    0    0 0.00    0    0 0.00    0    0
+## 5    0    0    0    0    0    0    0    0 0.00    0    0 0.00    0    0
+## 6    0    0    0    0    0    0    0    0 0.00    0    0 0.00    0    0
+##   A.43 A.44 A.45 A.46 A.47 A.48 A.49  A.50 A.51  A.52  A.53  A.54  A.55
+## 1 0.00    0 0.00 0.00    0    0 0.00 0.000    0 0.778 0.000 0.000 3.756
+## 2 0.00    0 0.00 0.00    0    0 0.00 0.132    0 0.372 0.180 0.048 5.114
+## 3 0.12    0 0.06 0.06    0    0 0.01 0.143    0 0.276 0.184 0.010 9.821
+## 4 0.00    0 0.00 0.00    0    0 0.00 0.137    0 0.137 0.000 0.000 3.537
+## 5 0.00    0 0.00 0.00    0    0 0.00 0.135    0 0.135 0.000 0.000 3.537
+## 6 0.00    0 0.00 0.00    0    0 0.00 0.223    0 0.000 0.000 0.000 3.000
+##   A.56 A.57 spam
+## 1   61  278 spam
+## 2  101 1028 spam
+## 3  485 2259 spam
+## 4   40  191 spam
+## 5   40  191 spam
+## 6   15   54 spam
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl kwd">dim</span><span class="hl std">(spam)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 4601   58
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl opt">?</span><span class="hl std">spam</span>
+</pre></div>
+</div></div>
+
+<p>At the end of the day, we essentially want to predict whether an email is spam or not based on the attributes of that email. We can see that approximately 40% of the emails in this listing are spam.  In practice, we should do EDA to see what is true about the variable columns using <b>summary()</b> to obtain statistics about each and using the <b>ggplot2</b> library to explore the relationships between each variable. </p>
+
+<div class="chunk" id="unnamed-chunk-3"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">length</span><span class="hl std">(spam</span><span class="hl opt">$</span><span class="hl std">spam[spam</span><span class="hl opt">$</span><span class="hl std">spam</span> <span class="hl opt">==</span> <span class="hl str">&quot;spam&quot;</span><span class="hl std">])</span> <span class="hl opt">/</span><span class="hl kwd">nrow</span><span class="hl std">(spam)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 0.3940448
+</pre></div>
+</div></div>
+
+<p>I will simply be focusing on using our new techniques to make predictions and comparing our models. I did look at some plots outside of this document, and I did check the structure to assure that the variable types for each column seemed reasonable. First, let me split the data into training and test data.</p>
+
+<div class="chunk" id="unnamed-chunk-4"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">set.seed</span><span class="hl std">(</span><span class="hl num">24</span><span class="hl std">)</span>
+<span class="hl std">train_ind</span> <span class="hl kwb">=</span> <span class="hl kwd">sample</span><span class="hl std">(</span><span class="hl kwd">nrow</span><span class="hl std">(spam),</span> <span class="hl kwd">nrow</span><span class="hl std">(spam)</span><span class="hl opt">/</span><span class="hl num">2</span><span class="hl std">)</span>
+<span class="hl std">train_data</span> <span class="hl kwb">=</span> <span class="hl std">spam[train_ind,]</span>
+<span class="hl std">test_data</span> <span class="hl kwb">=</span> <span class="hl std">spam[</span><span class="hl opt">-</span><span class="hl std">train_ind,]</span>
+</pre></div>
+</div></div>
+
+
+<p>Here I am going to 'blindly' fit a few different models to see how our ability to classify comprares across all modeling techniques. Each model fit is labeled below.  For models where I was not able to follow a somewhat 'standard' procedure, I have discussed why I needed to make a necessary change in the next paragraph.</p>
+
+<p>A few notes about the algorithms that required a little extra effort.  I had to manually look for the 'best' pruned tree using the cross-validation function.  'Googling' the warning yields the following <a href ="http://stats.stackexchange.com/questions/11109/how-to-deal-with-perfect-separation-in-logistic-regression">page</a> to assist with information and corrections.  Remember that the logistic regression output is a predicted probability of spam.  I, therefore, changed this to 'spam' or 'email' manually based on a 0.5 cutoff. Bagging is a special case of random forests in which all the predictors can be chosen at each split.  The updated training and test datasets were to make 'spam' and 'email' into '1' and '0,' as the <b>gbm()</b> algorithm only accepts a response of 0 and 1 (not in words).  </p>
+
+<ul>
+  <li> Decision Tree
+<div class="chunk" id="unnamed-chunk-5"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">tree_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">tree</span><span class="hl std">(spam</span><span class="hl opt">~</span><span class="hl std">.</span><span class="hl opt">-</span><span class="hl std">spam, train_data)</span>
+</pre></div>
+</div></div>
+  <li> Logistic Regression Model
+<div class="chunk" id="unnamed-chunk-6"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">logistic_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">glm</span><span class="hl std">(spam</span><span class="hl opt">~</span><span class="hl std">.</span><span class="hl opt">-</span><span class="hl std">spam, train_data,</span> <span class="hl kwc">family</span> <span class="hl std">=</span> <span class="hl kwd">binomial</span><span class="hl std">(</span><span class="hl kwc">link</span><span class="hl std">=</span><span class="hl str">'logit'</span><span class="hl std">))</span>
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+</pre></div>
+</div></div>
+  <li> Pruned Decision Tree (Based on Cross-validated)
+<div class="chunk" id="unnamed-chunk-7"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">cvtree_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">cv.tree</span><span class="hl std">(tree_spam,</span> <span class="hl kwc">FUN</span><span class="hl std">=prune.misclass)</span> <span class="hl com">#Shows Best Tree is of 11 nodes</span>
+<span class="hl std">prune_dt_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">prune.misclass</span><span class="hl std">(tree_spam,</span> <span class="hl kwc">best</span><span class="hl std">=</span><span class="hl num">11</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+  <li> Bagging
+<div class="chunk" id="unnamed-chunk-8"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">bag_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">randomForest</span><span class="hl std">(spam</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span> <span class="hl std">= train_data,</span> <span class="hl kwc">mtry</span><span class="hl std">=</span><span class="hl num">57</span><span class="hl std">,</span> <span class="hl kwc">importance</span><span class="hl std">=</span><span class="hl num">TRUE</span><span class="hl std">)</span>
+</pre></div>
+</div></div>
+  <li> Random Forest
+<div class="chunk" id="unnamed-chunk-9"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">rf_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">randomForest</span><span class="hl std">(spam</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span> <span class="hl std">= train_data,</span> <span class="hl kwc">mtry</span><span class="hl std">=</span><span class="hl kwd">sqrt</span><span class="hl std">(</span><span class="hl num">57</span><span class="hl std">))</span>
+</pre></div>
+</div></div>
+  <li> Gradient Boosting
+<div class="chunk" id="unnamed-chunk-10"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">train_data2</span> <span class="hl kwb">=</span> <span class="hl std">train_data[,</span><span class="hl opt">-</span><span class="hl kwd">ncol</span><span class="hl std">(train_data)]</span>
+<span class="hl std">train_data2</span><span class="hl opt">$</span><span class="hl std">spam2</span> <span class="hl kwb">=</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl std">,</span> <span class="hl num">0</span><span class="hl std">)[</span><span class="hl kwd">unclass</span><span class="hl std">(train_data</span><span class="hl opt">$</span><span class="hl std">spam)]</span>
+<span class="hl std">test_data2</span> <span class="hl kwb">=</span> <span class="hl std">test_data[,</span><span class="hl opt">-</span><span class="hl kwd">ncol</span><span class="hl std">(test_data)]</span>
+<span class="hl std">test_data2</span><span class="hl opt">$</span><span class="hl std">spam2</span> <span class="hl kwb">=</span> <span class="hl kwd">c</span><span class="hl std">(</span><span class="hl num">1</span><span class="hl std">,</span> <span class="hl num">0</span><span class="hl std">)[</span><span class="hl kwd">unclass</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam)]</span>
+<span class="hl std">gbm_spam</span> <span class="hl kwb">=</span> <span class="hl kwd">gbm</span><span class="hl std">(spam2</span><span class="hl opt">~</span><span class="hl std">.,</span> <span class="hl kwc">data</span> <span class="hl std">= train_data2,</span> <span class="hl kwc">distribution</span><span class="hl std">=</span><span class="hl str">&quot;bernoulli&quot;</span><span class="hl std">,</span>
+               <span class="hl kwc">n.trees</span><span class="hl std">=</span><span class="hl num">500</span><span class="hl std">,</span> <span class="hl kwc">interaction.depth</span><span class="hl std">=</span><span class="hl num">5</span><span class="hl std">,</span> <span class="hl kwc">shrinkage</span><span class="hl std">=</span><span class="hl num">0.2</span><span class="hl std">)</span>
+<span class="hl kwd">gbm.perf</span><span class="hl std">(gbm_spam,</span> <span class="hl kwc">plot.it</span><span class="hl std">=</span><span class="hl num">FALSE</span><span class="hl std">)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">## Using OOB method...
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning in gbm.perf(gbm_spam, plot.it = FALSE): OOB generally
+## underestimates the optimal number of iterations although predictive
+## performance is reasonably competitive. Using cv.folds&gt;0 when calling gbm
+## usually results in improved predictive performance.
+</pre></div>
+<div class="output"><pre class="knitr r">## [1] 32
+</pre></div>
+</div></div>
+</ul>
+
+<p>Then we can save the predictions from each method on the test data, and compare the predictions to the actual values in the test set to judge the fit. </p>
+
+<ul>
+  <li> Decision Tree
+<div class="chunk" id="unnamed-chunk-11"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">tree_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(tree_spam, test_data,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">table</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam, tree_pred)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##        tree_pred
+##         email spam
+##   email  1331   74
+##   spam    147  749
+</pre></div>
+</div></div>
+  <li> Logistic Regression Model
+<div class="chunk" id="unnamed-chunk-12"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">prob_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(logistic_spam, test_data)</span>
+<span class="hl std">logistic_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">rep</span><span class="hl std">(</span><span class="hl str">&quot;email&quot;</span><span class="hl std">,</span> <span class="hl kwd">nrow</span><span class="hl std">(test_data))</span>
+<span class="hl std">logistic_pred[prob_pred</span> <span class="hl opt">&gt;</span> <span class="hl num">0.5</span><span class="hl std">]</span> <span class="hl kwb">=</span> <span class="hl str">&quot;spam&quot;</span>
+<span class="hl kwd">table</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam, logistic_pred)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##        logistic_pred
+##         email spam
+##   email  1347   58
+##   spam    139  757
+</pre></div>
+</div></div>
+  <li> Pruned Decision Tree (Based on Cross-validated)
+<div class="chunk" id="unnamed-chunk-13"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">cvtree_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(prune_dt_spam, test_data,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">table</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam, cvtree_pred)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##        cvtree_pred
+##         email spam
+##   email  1331   74
+##   spam    147  749
+</pre></div>
+</div></div>
+  <li> Bagging
+<div class="chunk" id="unnamed-chunk-14"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">bag_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(bag_spam, test_data,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">table</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam, bag_pred)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##        bag_pred
+##         email spam
+##   email  1348   57
+##   spam    104  792
+</pre></div>
+</div></div>
+  <li> Random Forest
+<div class="chunk" id="unnamed-chunk-15"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">rf_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(rf_spam, test_data,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;class&quot;</span><span class="hl std">)</span>
+<span class="hl kwd">table</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam, rf_pred)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##        rf_pred
+##         email spam
+##   email  1364   41
+##   spam     79  817
+</pre></div>
+</div></div>
+  <li> Gradient Boosting
+<div class="chunk" id="unnamed-chunk-16"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl std">gbm_prob_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">predict</span><span class="hl std">(gbm_spam, test_data2,</span> <span class="hl kwc">n.trees</span><span class="hl std">=</span><span class="hl num">31</span><span class="hl std">,</span> <span class="hl kwc">type</span><span class="hl std">=</span><span class="hl str">&quot;response&quot;</span><span class="hl std">)</span>
+<span class="hl std">gbm_pred</span> <span class="hl kwb">=</span> <span class="hl kwd">rep</span><span class="hl std">(</span><span class="hl str">&quot;email&quot;</span><span class="hl std">,</span> <span class="hl kwd">nrow</span><span class="hl std">(test_data2))</span>
+<span class="hl std">gbm_pred[gbm_prob_pred</span> <span class="hl opt">&lt;</span> <span class="hl num">0.5</span><span class="hl std">]</span> <span class="hl kwb">=</span> <span class="hl str">&quot;spam&quot;</span>
+<span class="hl kwd">table</span><span class="hl std">(test_data</span><span class="hl opt">$</span><span class="hl std">spam, gbm_pred)</span>
+</pre></div>
+<div class="output"><pre class="knitr r">##        gbm_pred
+##         email spam
+##   email  1349   56
+##   spam     84  812
+</pre></div>
+</div></div>
+</ul>
+
+<p>Before commenting about the regarding results, I would like to point some of the important characteristics of the ensemble methods.  With random forests, we are randomly selecting data points to use to fit our tree.  We are also randomly selecting the features that are available for each tree.  Randomly selecting features assures that all the trees aren't doing all the same splits.  Because of this, we are de-correlating our trees, and we are coming up with a modeling method that will not overfit our training data.  Random forests are usually grown very deep - that is they have a lot of splits, and we build many trees and average the predictions from all the trees to predict for a new dataset.  We do not have to worry about choosing a very large number of trees in random forests, because this method will not overfit when using more trees.</p>
+
+<p>With boosting, there are essentially three main components that we often optimize using cross validataion techniques:
+<ul>
+  <li> <b>n.trees</b> - Chooses the number of trees.  Unlike random forests, choosing too many trees will overfit your training data.
+<br></br>
+  <li> <b>interaction.depth</b> - Chooses how deep you want each tree to be on fitting each residual.  Could be a large or small number of splits depending on your data.  The text suggests stumps often work well.
+<br></br>
+  <li> <b>shrinkage</b> - A value between 0 and 1. The text discusses using 0.01 or 0.001, but is dependent on the number of trees.  Smaller values can require a larger number of trees.
+</ul>
+
+The <b>gbm.perf()</b> function helps us choose the optimal number of trees to build.  In this case, it suggests 31 trees; but we might tweak back and forth with the number of trees and the shrinkage parameter to find an optimal combination.</p>
+
+<p>Looking at the results we could compute the recall, precision, and accuracy; but it isn't hard to see based on the confusion matrix that random forests appear to be the best performer for this round.  The gbm algorithm comes in at a close second, and tweaking the three parameters discussed above, we might be able to build an alternative model that outperforms the random forest method. </p>
+
+</body>
+</html>
